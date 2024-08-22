@@ -13,3 +13,5 @@ export interface SVGChartsTypes {
     yAxis?: boolean,
     ticks?: boolean,
 }
+
+export type Point = {x: number, y: number};
