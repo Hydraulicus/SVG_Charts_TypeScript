@@ -1,4 +1,5 @@
 import {SVGCharts} from "./SVGChart";
+import "./styles.module.css"
 
 const start = () => {
     const SVGChart = new SVGCharts({

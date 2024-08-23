@@ -24,10 +24,13 @@ export class SVGCharts {
     readonly lightStyle = {
         fill: 'none',
         stroke: `url(#${this.gradientId})`,
-        'stroke-width': 6,
-        backgroundColor: '#ccc'
+        backgroundColor: '#eee'
     };
-    readonly darkStyle = {fill: 'none', stroke: `url(#${this.gradientId})`, 'stroke-width': 6, backgroundColor: '#555'};
+    readonly darkStyle = {
+        fill: 'none',
+        stroke: `url(#${this.gradientId})`,
+        backgroundColor: '#555'
+    };
 
     stops = [
         {
@@ -72,7 +75,7 @@ export class SVGCharts {
 
         const svgChart = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         this.svgNS = svgChart.namespaceURI;
-        svgChart.setAttribute("style", `background-color: ${backgroundColor}`);
+        svgChart.setAttribute("style", `background-color: ${backgroundColor}; stroke-width: ${2 * this.relativeUnit}px`);
         svgChart.setAttribute("width", `${width}`);
         svgChart.setAttribute("height", `${height}`);
         svgChart.setAttribute("viewBox", `0 0 ${width} ${height}`);
@@ -303,8 +306,9 @@ export class SVGCharts {
                 ...this.darkStyle,
                 x: this.scoreXY[0] - 3 * this.relativeUnit,
                 y: this.scoreXY[1] - 8 * this.relativeUnit,
-                'stroke-width': 2,
+                'stroke-width': this.relativeUnit,
                 'font-size': 8 * this.relativeUnit,
+                'font-family': 'Roboto'
             }
         )
         const mark = document.createTextNode(`${score}`);
