@@ -3,11 +3,28 @@ import {SVGCharts} from "./SVGChart";
 const start = () => {
     const SVGChart = new SVGCharts({
         parent: document.body,
-        size: {w: 800, h: 530},
+        // size: {w: 800, h: 530},
         yAxis: false,
-        ticks: false
+        ticks: false,
+        sections: [
+            {
+                color: "#AA1212",
+                offset: "7%"
+            },{
+                color: "#ffaa11",
+                offset: "8%"
+            },{
+                color: "#ffaa11",
+                offset: "16%"
+            },{
+                color: "#00aa00",
+                offset: "17%"
+            }
+        ],
     })
-    SVGChart.addChart({point: 15});
+    SVGChart.addChart({
+        score: 15,
+    });
 
 }
 

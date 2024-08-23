@@ -1,4 +1,4 @@
-import {ChartFn, ChartProps, DrawFn, Point, SVGChartsTypes} from "./types";
+import {ChartFn, ChartProps, DrawFn, Point, sections, SVGChartsTypes} from "./types";
 import {catmullRom2bezier, getMinMax, scaleBetween} from "./utils";
 
 export class SVGCharts {
@@ -15,11 +15,35 @@ export class SVGCharts {
     readonly ticks: boolean;
 
     private svgNS: string;
+    private scoreXY: number[];
 
     private gradientId = 'ChartGradient';
 
-    readonly lightStyle = {fill: 'none', stroke: `url(#${this.gradientId})`, 'stroke-width': 6, backgroundColor: 'darkgray'};
-    readonly darkStyle = {fill: 'none', stroke: `url(#${this.gradientId})`, 'stroke-width': 6, backgroundColor: 'lightgray'};
+    private relativeUnit: number;
+
+    readonly lightStyle = {
+        fill: 'none',
+        stroke: `url(#${this.gradientId})`,
+        'stroke-width': 6,
+        backgroundColor: '#ccc'
+    };
+    readonly darkStyle = {fill: 'none', stroke: `url(#${this.gradientId})`, 'stroke-width': 6, backgroundColor: '#555'};
+
+    stops = [
+        {
+            color: "#AA1212",
+            offset: "7%"
+        }, {
+            color: "#ffaa11",
+            offset: "8%"
+        }, {
+            color: "#ffaa11",
+            offset: "16%"
+        }, {
+            color: "#00aa00",
+            offset: "17%"
+        }
+    ];
 
     constructor({
                     parent,
@@ -34,6 +58,8 @@ export class SVGCharts {
         this.xAxis = xAxis;
         this.yAxis = yAxis;
         this.ticks = ticks;
+
+        this.relativeUnit = 0.01 * size.h;
 
         this.container = this.addSVG({...this.lightStyle, width: this.xSize, height: this.ySize});
     }
@@ -52,27 +78,27 @@ export class SVGCharts {
         svgChart.setAttribute("viewBox", `0 0 ${width} ${height}`);
         svgChart.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
 
-        const defs = this.generateGradient();
-        svgChart.appendChild(defs);
 
+        const defs = this.generateGradient({stops: this.stops});
+        svgChart.appendChild(defs);
 
 
         this.parent.appendChild(svgChart);
         return svgChart
     }
 
-    addChart({point}: {point: number}) {
+    addChart({score}: { score: number }) {
         const opts = {doEqualizeAxes: true, doDrawAxes: true}
         this.drawFn({
-            score: 15,
+            score,
             xMin: -2.5,
             xMax: 2.5,
             yMin: -10,
-            yMax: 60,
+            yMax: 55,
             opts,
-            fn: (x: number) => Math.exp(-(x * x) / 600) * 45 + 5
+            fn: (x: number) => Math.exp(-(x * x) / 600) * 45 + 2
         })
-
+        this.showPoint(score)
 
         // this.drawPointsChart([-2, -2, -5, -8, 0 ,5, 4, 3, 0, -5, -9]);
     };
@@ -112,12 +138,14 @@ export class SVGCharts {
         const factorY = 0.9 * this.ySize / amph;
         console.log(this.xSize, this.ySize, minY, maxY, amph, factorY);
         const points: Point[] = [];
-        const scaledX: number[]  = scaleBetween(
-            {arr: Array.from(Array(graph.length), (_, i) => i),
+        const scaledX: number[] = scaleBetween(
+            {
+                arr: Array.from(Array(graph.length), (_, i) => i),
                 scaledMin: this.xSize * 0.1,
-                scaledMax: this.xSize * 0.9}
+                scaledMax: this.xSize * 0.9
+            }
         );
-        const scaledY: number[]  = scaleBetween({arr: graph, scaledMin: this.ySize * 0.1, scaledMax: this.ySize * 0.9});
+        const scaledY: number[] = scaleBetween({arr: graph, scaledMin: this.ySize * 0.1, scaledMax: this.ySize * 0.9});
         for (var i = 0; i < graph.length; i++) {
             points.push({x: scaledX[i], y: -1 * scaledY[i] + this.ySize});
         }
@@ -237,7 +265,6 @@ export class SVGCharts {
         var xPrev = xMin
         var prevCanvasY = null
 
-        let scoreXY: number[] = [null, null];
 
         for (var i = 0; i < this.numFnPts; i++) {
             var x: number, xTarget: number = xMin + i * xDelta
@@ -253,7 +280,10 @@ export class SVGCharts {
                     var canvasPt = canvasPtFromXY(x, y)
                     perc /= 2
                 }
-                if (i === score) { scoreXY = canvasPt };
+                if (i === score) {
+                    this.scoreXY = canvasPt
+                }
+                console.log(i, x, y, canvasPt)
                 pts.push(canvasPt[0], canvasPt[1])
                 xPrev = x
                 prevCanvasY = canvasPt[1]
@@ -261,25 +291,33 @@ export class SVGCharts {
         }
         var polyline = this.add('polyline', this.darkStyle)
         this.addAttributes(polyline, {points: pts.join(' ')})
-        var circle = this.add('circle', this.darkStyle);
-        this.addAttributes(circle, {cx: scoreXY[0], cy: scoreXY[1], r: 5})
     }
 
-    generateGradient = (): Element => {
+    showPoint = (score: number) => {
+        const circle = this.add('circle', this.darkStyle);
+        this.addAttributes(circle, {cx: this.scoreXY[0], cy: this.scoreXY[1], r: 5})
+
+        const text = this.add(
+            'text',
+            {
+                ...this.darkStyle,
+                x: this.scoreXY[0] - 3 * this.relativeUnit,
+                y: this.scoreXY[1] - 8 * this.relativeUnit,
+                'stroke-width': 2,
+                'font-size': 8 * this.relativeUnit,
+            }
+        )
+        const mark = document.createTextNode(`${score}`);
+        text.appendChild(mark);
+
+    }
+
+    generateGradient = ({stops}: { stops: sections }): Element => {
 
         const defs = document.createElementNS(this.svgNS, 'defs');
         const gradient = document.createElementNS(this.svgNS, 'linearGradient');
 
-        // TODO move stops to params
-        const stops = [
-            {
-                color: "#0C0C7A",
-                offset: "0%"
-            },{
-                color: "#5A93FC",
-                offset: "100%"
-            }
-        ];
+
         stops.forEach(stop => {
             const el = document.createElementNS(this.svgNS, 'stop');
             el.setAttribute('offset', stop.offset);
@@ -291,11 +329,11 @@ export class SVGCharts {
         gradient.setAttribute('x1', '0');
         gradient.setAttribute('x2', '100%');
         gradient.setAttribute('y1', '0');
-        gradient.setAttribute('y2', '100%');
+        gradient.setAttribute('y2', '0');
         gradient.setAttribute('gradientUnits', 'userSpaceOnUse');
         defs.appendChild(gradient);
 
-        return  defs
-}
+        return defs
+    }
 
 }
