@@ -4,7 +4,7 @@ import "./styles.module.css"
 const start = () => {
     const SVGChart = new SVGCharts({
         parent: document.body,
-        // size: {w: 800, h: 530},
+        size: {w: 800, h: 530},
         yAxis: false,
         ticks: false,
         ranges: [

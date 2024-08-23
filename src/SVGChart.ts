@@ -11,6 +11,7 @@ export class SVGCharts {
 
     // TODO get from parameters
     readonly numFnPts = 100;
+    readonly pnts: Point[] = [];
     readonly xAxis: boolean;
     readonly yAxis: boolean;
     readonly ticks: boolean;
@@ -206,6 +207,30 @@ export class SVGCharts {
             return [xPerc * this.xSize, this.ySize - yPerc * this.ySize]
         }
 
+        const drawBorders = () => {
+            const [_, botY] = canvasPtFromXY(xMin, 0);
+
+            const points1 = `
+                ${this.pnts[Math.abs(this.ranges[0].max)].x} ${botY + this.relativeUnit}
+                ${this.pnts[Math.abs(this.ranges[0].max)].x} 0
+                ${this.pnts[Math.abs(this.ranges[1].min)].x} 0
+                ${this.pnts[Math.abs(this.ranges[1].min)].x} ${botY + this.relativeUnit}
+            `;
+
+            const bprder1 = this.add('polyline', {...this.darkStyle, 'stroke-width': '0', fill: 'white'})
+            this.addAttributes(bprder1, {points: points1})
+
+            const points2 = `
+                ${this.pnts[Math.abs(this.ranges[1].max)].x} ${botY + this.relativeUnit}
+                ${this.pnts[Math.abs(this.ranges[1].max)].x} 0
+                ${this.pnts[Math.abs(this.ranges[2].min)].x} 0
+                ${this.pnts[Math.abs(this.ranges[2].min)].x} ${botY + this.relativeUnit}
+            `;
+
+            const bprder2 = this.add('polyline', {...this.darkStyle, 'stroke-width': '0', fill: 'white'})
+            this.addAttributes(bprder2, {points: points2})
+        }
+
         const drawTickAroundPt = (p: any, dir: any) => {
             var tick = this.add('line', this.lightStyle)
             var a = [p[0], p[1]]
@@ -278,11 +303,15 @@ export class SVGCharts {
                 if (i === score) {
                     this.scoreXY = canvasPt
                 }
+                this.pnts.push({x: canvasPt[0], y: canvasPt[1]});
                 pts.push(canvasPt[0], canvasPt[1])
                 xPrev = x
                 prevCanvasY = canvasPt[1]
             } while (x < xTarget);
         }
+
+        drawBorders();
+
         var polyline = this.add('polyline', this.darkStyle)
         this.addAttributes(polyline, {points: pts.join(' ')})
     }
@@ -304,7 +333,6 @@ export class SVGCharts {
         )
         const mark = document.createTextNode(`${score}`);
         text.appendChild(mark);
-
     }
 
     generateGradient = ({stops}: { stops: Ranges }): Element => {
