@@ -4,7 +4,7 @@ export interface ChartProps {
     backgroundColor: string;
 }
 
-export type sections = {color: string, offset: string}[]
+export type Ranges = {color: string, name: string, min: number, max: number}[];
 
 export interface SVGChartsTypes {
     parent: HTMLElement
@@ -13,7 +13,7 @@ export interface SVGChartsTypes {
     xAxis?: boolean,
     yAxis?: boolean,
     ticks?: boolean,
-    sections: sections
+    ranges: Ranges
 }
 
 export type ChartFn = (x: number) => number;

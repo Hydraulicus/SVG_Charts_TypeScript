@@ -1,5 +1,6 @@
-import {ChartFn, ChartProps, DrawFn, Point, sections, SVGChartsTypes} from "./types";
+import {ChartFn, ChartProps, DrawFn, Point, Ranges, SVGChartsTypes} from "./types";
 import {catmullRom2bezier, getMinMax, scaleBetween} from "./utils";
+import {defRanges} from "./const";
 
 export class SVGCharts {
     private parent: HTMLElement;
@@ -21,6 +22,8 @@ export class SVGCharts {
 
     private relativeUnit: number;
 
+    ranges: Ranges;
+
     readonly lightStyle = {
         fill: 'none',
         stroke: `url(#${this.gradientId})`,
@@ -32,21 +35,7 @@ export class SVGCharts {
         backgroundColor: '#555'
     };
 
-    stops = [
-        {
-            color: "#AA1212",
-            offset: "7%"
-        }, {
-            color: "#ffaa11",
-            offset: "8%"
-        }, {
-            color: "#ffaa11",
-            offset: "16%"
-        }, {
-            color: "#00aa00",
-            offset: "17%"
-        }
-    ];
+
 
     constructor({
                     parent,
@@ -54,6 +43,7 @@ export class SVGCharts {
                     xAxis = true,
                     yAxis = true,
                     ticks = true,
+                    ranges = defRanges,
                 }: SVGChartsTypes) {
         this.parent = parent;
         this.xSize = size.w;
@@ -63,6 +53,8 @@ export class SVGCharts {
         this.ticks = ticks;
 
         this.relativeUnit = 0.01 * size.h;
+
+        this.ranges = ranges
 
         this.container = this.addSVG({...this.lightStyle, width: this.xSize, height: this.ySize});
     }
@@ -82,7 +74,7 @@ export class SVGCharts {
         svgChart.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
 
 
-        const defs = this.generateGradient({stops: this.stops});
+        const defs = this.generateGradient({stops: this.ranges});
         svgChart.appendChild(defs);
 
 
@@ -286,7 +278,6 @@ export class SVGCharts {
                 if (i === score) {
                     this.scoreXY = canvasPt
                 }
-                console.log(i, x, y, canvasPt)
                 pts.push(canvasPt[0], canvasPt[1])
                 xPrev = x
                 prevCanvasY = canvasPt[1]
@@ -316,17 +307,21 @@ export class SVGCharts {
 
     }
 
-    generateGradient = ({stops}: { stops: sections }): Element => {
+    generateGradient = ({stops}: { stops: Ranges }): Element => {
 
         const defs = document.createElementNS(this.svgNS, 'defs');
         const gradient = document.createElementNS(this.svgNS, 'linearGradient');
 
 
         stops.forEach(stop => {
-            const el = document.createElementNS(this.svgNS, 'stop');
-            el.setAttribute('offset', stop.offset);
-            el.setAttribute('stop-color', stop.color);
-            gradient.appendChild(el);
+            const elMin = document.createElementNS(this.svgNS, 'stop');
+            elMin.setAttribute('offset', `${stop.min}%`);
+            elMin.setAttribute('stop-color', stop.color);
+            gradient.appendChild(elMin);
+            const elMax = document.createElementNS(this.svgNS, 'stop');
+            elMax.setAttribute('offset', `${stop.max}%`);
+            elMax.setAttribute('stop-color', stop.color);
+            gradient.appendChild(elMax);
         });
 
         gradient.id = this.gradientId;

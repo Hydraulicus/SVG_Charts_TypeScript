@@ -7,21 +7,26 @@ const start = () => {
         // size: {w: 800, h: 530},
         yAxis: false,
         ticks: false,
-        sections: [
+        ranges: [
             {
-                color: "#AA1212",
-                offset: "7%"
-            },{
-                color: "#ffaa11",
-                offset: "8%"
-            },{
-                color: "#ffaa11",
-                offset: "16%"
-            },{
-                color: "#00aa00",
-                offset: "17%"
+                min: 0,
+                max: 7,
+                name: "Low",
+                color: "#AA1212"
+            },
+            {
+                min: 8,
+                max: 16,
+                name: "Borderline",
+                color: "#fd9c13"
+            },
+            {
+                min: 17,
+                max: 100,
+                name: "Normal",
+                color: "#189e05"
             }
-        ],
+        ]
     })
     SVGChart.addChart({
         score: 15,
