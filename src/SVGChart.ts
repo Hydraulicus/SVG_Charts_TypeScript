@@ -1,4 +1,4 @@
-import {ChartProps, Point, SVGChartsTypes} from "./types";
+import {ChartFn, ChartProps, DrawFn, Point, SVGChartsTypes} from "./types";
 import {catmullRom2bezier, getMinMax, scaleBetween} from "./utils";
 
 export class SVGCharts {
@@ -16,8 +16,10 @@ export class SVGCharts {
 
     private svgNS: string;
 
-    readonly lightStyle = {stroke: '#ddd', fill: 'transparent', 'stroke-width': 3, backgroundColor: 'darkgray'};
-    readonly darkStyle = {stroke: '#666', fill: 'transparent', 'stroke-width': 3, backgroundColor: 'lightgray'};
+    private gradientId = 'ChartGradient';
+
+    readonly lightStyle = {fill: 'none', stroke: `url(#${this.gradientId})`, 'stroke-width': 6, backgroundColor: 'darkgray'};
+    readonly darkStyle = {fill: 'none', stroke: `url(#${this.gradientId})`, 'stroke-width': 6, backgroundColor: 'lightgray'};
 
     constructor({
                     parent,
@@ -49,19 +51,30 @@ export class SVGCharts {
         svgChart.setAttribute("height", `${height}`);
         svgChart.setAttribute("viewBox", `0 0 ${width} ${height}`);
         svgChart.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
+
+        const defs = this.generateGradient();
+        svgChart.appendChild(defs);
+
+
+
         this.parent.appendChild(svgChart);
         return svgChart
     }
 
-    addChart({}: {}) {
+    addChart({point}: {point: number}) {
         const opts = {doEqualizeAxes: true, doDrawAxes: true}
-        this.drawFn(-2.5, 2.5, -2, 50, opts, function (x: number) {
-            return Math.exp(-(x * x) / 600) * 45
+        this.drawFn({
+            score: 15,
+            xMin: -2.5,
+            xMax: 2.5,
+            yMin: -10,
+            yMax: 60,
+            opts,
+            fn: (x: number) => Math.exp(-(x * x) / 600) * 45 + 5
         })
 
 
-        // var graph = [-2, -2, -5, -8, 0 ,5, 4, 3, 0, -5, -9];
-        // this.drawPointsChart(graph);
+        // this.drawPointsChart([-2, -2, -5, -8, 0 ,5, 4, 3, 0, -5, -9]);
     };
 
     drawPointsChart = (graph: number[]) => {
@@ -140,7 +153,7 @@ export class SVGCharts {
     }
 
 
-    drawFn = (xMin: number, xMax: number, yMin: number, yMax: number, opts: any, fn: any) => {
+    drawFn = ({score, xMin, xMax, yMin, yMax, opts, fn}: DrawFn) => {
         if (opts && fn === undefined) {
             fn = opts
             opts = null
@@ -224,6 +237,8 @@ export class SVGCharts {
         var xPrev = xMin
         var prevCanvasY = null
 
+        let scoreXY: number[] = [null, null];
+
         for (var i = 0; i < this.numFnPts; i++) {
             var x: number, xTarget: number = xMin + i * xDelta
             do {
@@ -238,14 +253,49 @@ export class SVGCharts {
                     var canvasPt = canvasPtFromXY(x, y)
                     perc /= 2
                 }
+                if (i === score) { scoreXY = canvasPt };
                 pts.push(canvasPt[0], canvasPt[1])
                 xPrev = x
                 prevCanvasY = canvasPt[1]
             } while (x < xTarget);
         }
         var polyline = this.add('polyline', this.darkStyle)
-        // console.log(' pts =', pts)
         this.addAttributes(polyline, {points: pts.join(' ')})
+        var circle = this.add('circle', this.darkStyle);
+        this.addAttributes(circle, {cx: scoreXY[0], cy: scoreXY[1], r: 5})
     }
+
+    generateGradient = (): Element => {
+
+        const defs = document.createElementNS(this.svgNS, 'defs');
+        const gradient = document.createElementNS(this.svgNS, 'linearGradient');
+
+        // TODO move stops to params
+        const stops = [
+            {
+                color: "#0C0C7A",
+                offset: "0%"
+            },{
+                color: "#5A93FC",
+                offset: "100%"
+            }
+        ];
+        stops.forEach(stop => {
+            const el = document.createElementNS(this.svgNS, 'stop');
+            el.setAttribute('offset', stop.offset);
+            el.setAttribute('stop-color', stop.color);
+            gradient.appendChild(el);
+        });
+
+        gradient.id = this.gradientId;
+        gradient.setAttribute('x1', '0');
+        gradient.setAttribute('x2', '100%');
+        gradient.setAttribute('y1', '0');
+        gradient.setAttribute('y2', '100%');
+        gradient.setAttribute('gradientUnits', 'userSpaceOnUse');
+        defs.appendChild(gradient);
+
+        return  defs
+}
 
 }

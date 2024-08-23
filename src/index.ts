@@ -7,7 +7,7 @@ const start = () => {
         yAxis: false,
         ticks: false
     })
-    SVGChart.addChart({});
+    SVGChart.addChart({point: 15});
 
 }
 
