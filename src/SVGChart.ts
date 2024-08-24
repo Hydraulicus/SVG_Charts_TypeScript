@@ -56,6 +56,7 @@ export class SVGCharts {
         this.relativeUnit = 0.01 * size.h;
 
         this.ranges = ranges
+        // this.ctx = document.createElement("canvas").getContext("2d");
 
         this.container = this.addSVG({...this.lightStyle, width: this.xSize, height: this.ySize});
     }
@@ -207,6 +208,50 @@ export class SVGCharts {
             return [xPerc * this.xSize, this.ySize - yPerc * this.ySize]
         }
 
+        const drawLegend = () => {
+            const fontSize = 8 * this.relativeUnit;
+            const [_, botY] = canvasPtFromXY(xMin, 0);
+
+            const commonProps = {
+                ...this.darkStyle,
+                y: botY + 1.5 * fontSize  + this.relativeUnit,
+                'stroke-width': this.relativeUnit,
+                'font-size': `${fontSize}px`,
+                //TODO remove fixed font-family. Use as parameter
+                'font-family': 'Roboto'
+            }
+
+            const text0 = this.add(
+                'text',
+                { ...commonProps, x: this.pnts[Math.abs(this.ranges[0].min)].x, }
+            )
+            const mark0 = document.createTextNode(`${this.ranges[0].name}`);
+            text0.appendChild(mark0);
+            const bbox0 = (text0 as SVGSVGElement).getBBox();
+            console.log(text0, ' bbox0=', bbox0)
+
+            const x1 = Math.max(this.pnts[Math.abs(this.ranges[1].min)].x, bbox0.x + bbox0.width);
+            const text1 = this.add(
+                'text',
+                { ...commonProps, x: x1, }
+            )
+            const mark1 = document.createTextNode(`${this.ranges[1].name}`);
+            text1.appendChild(mark1);
+            const bbox1 = (text1 as SVGSVGElement).getBBox();
+            console.log(text1, ' bbox1=', bbox1)
+
+            const x2 = Math.max(this.pnts[Math.abs(this.ranges[2].min)].x, bbox1.x + bbox1.width);
+            const text2 = this.add(
+                'text',
+                { ...commonProps, x: x2 }
+            )
+            const mark2 = document.createTextNode(`${this.ranges[2].name}`);
+            text2.appendChild(mark2);
+            const bbox2 = (text2 as SVGSVGElement).getBBox();
+            console.log(text2, ' bbox2=', bbox2)
+
+        }
+
         const drawBorders = () => {
             const [_, botY] = canvasPtFromXY(xMin, 0);
 
@@ -311,6 +356,7 @@ export class SVGCharts {
         }
 
         drawBorders();
+        if (this.xAxis) { drawLegend(); }
 
         var polyline = this.add('polyline', this.darkStyle)
         this.addAttributes(polyline, {points: pts.join(' ')})
