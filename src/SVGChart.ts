@@ -211,69 +211,57 @@ export class SVGCharts {
         const drawLegend = () => {
             const fontSize = 8 * this.relativeUnit;
             const [_, botY] = canvasPtFromXY(xMin, 0);
+            const legendTopPadding = 1.5 * fontSize  + this.relativeUnit
 
             const commonProps = {
                 ...this.darkStyle,
-                y: botY + 1.5 * fontSize  + this.relativeUnit,
+                y: botY + legendTopPadding,
                 'stroke-width': this.relativeUnit,
                 'font-size': `${fontSize}px`,
-                //TODO remove fixed font-family. Use as parameter
+                //TODO remove fixed font-family. Use as parameter or use class
                 'font-family': 'Roboto'
             }
 
-            const text0 = this.add(
-                'text',
-                { ...commonProps, x: this.pnts[Math.abs(this.ranges[0].min)].x, }
-            )
-            const mark0 = document.createTextNode(`${this.ranges[0].name}`);
-            text0.appendChild(mark0);
-            const bbox0 = (text0 as SVGSVGElement).getBBox();
-            console.log(text0, ' bbox0=', bbox0)
+            const drawLegendSign = ({i, startX}: {i: number, startX: number}): DOMRect => {
+                const xPos = Math.max(this.pnts[Math.abs(this.ranges[i].min)].x, startX);
 
-            const x1 = Math.max(this.pnts[Math.abs(this.ranges[1].min)].x, bbox0.x + bbox0.width);
-            const text1 = this.add(
-                'text',
-                { ...commonProps, x: x1, }
-            )
-            const mark1 = document.createTextNode(`${this.ranges[1].name}`);
-            text1.appendChild(mark1);
-            const bbox1 = (text1 as SVGSVGElement).getBBox();
-            console.log(text1, ' bbox1=', bbox1)
+                const txt = this.add(
+                    'text',
+                    { ...commonProps, x: xPos, }
+                )
+                const mark = document.createTextNode(`${this.ranges[i].name}`);
+                txt.appendChild(mark);
+                const xMiddle = this.pnts[Math.round((this.ranges[i].min + this.ranges[i].max)/2)].x;
+                const points = `
+                ${xMiddle} ${botY + this.relativeUnit}
+                ${xMiddle} ${botY + this.relativeUnit + 100}
+            `;
 
-            const x2 = Math.max(this.pnts[Math.abs(this.ranges[2].min)].x, bbox1.x + bbox1.width);
-            const text2 = this.add(
-                'text',
-                { ...commonProps, x: x2 }
-            )
-            const mark2 = document.createTextNode(`${this.ranges[2].name}`);
-            text2.appendChild(mark2);
-            const bbox2 = (text2 as SVGSVGElement).getBBox();
-            console.log(text2, ' bbox2=', bbox2)
+                const bbox = (txt as SVGSVGElement).getBBox();
+                const ln = this.add('polyline', {...this.darkStyle, 'stroke-width': '2', fill: 'magenta'})
+                this.addAttributes(ln, {points})
+                return bbox
+            }
 
+            const bbox0 = drawLegendSign({i: 0, startX: 0})
+            const bbox1 = drawLegendSign({i: 1, startX: bbox0.x + bbox0.width})
+            const bbox2 = drawLegendSign({i: 2, startX: bbox1.x + bbox1.width})
         }
 
         const drawBorders = () => {
             const [_, botY] = canvasPtFromXY(xMin, 0);
-
-            const points1 = `
-                ${this.pnts[Math.abs(this.ranges[0].max)].x} ${botY + this.relativeUnit}
-                ${this.pnts[Math.abs(this.ranges[0].max)].x} 0
-                ${this.pnts[Math.abs(this.ranges[1].min)].x} 0
-                ${this.pnts[Math.abs(this.ranges[1].min)].x} ${botY + this.relativeUnit}
+            const drawBorder = (i0: number, i1: number) => {
+                const points = `
+                ${this.pnts[Math.abs(this.ranges[i0].max)].x} ${botY + this.relativeUnit}
+                ${this.pnts[Math.abs(this.ranges[i0].max)].x} 0
+                ${this.pnts[Math.abs(this.ranges[i1].min)].x} 0
+                ${this.pnts[Math.abs(this.ranges[i1].min)].x} ${botY + this.relativeUnit}
             `;
-
-            const bprder1 = this.add('polyline', {...this.darkStyle, 'stroke-width': '0', fill: 'white'})
-            this.addAttributes(bprder1, {points: points1})
-
-            const points2 = `
-                ${this.pnts[Math.abs(this.ranges[1].max)].x} ${botY + this.relativeUnit}
-                ${this.pnts[Math.abs(this.ranges[1].max)].x} 0
-                ${this.pnts[Math.abs(this.ranges[2].min)].x} 0
-                ${this.pnts[Math.abs(this.ranges[2].min)].x} ${botY + this.relativeUnit}
-            `;
-
-            const bprder2 = this.add('polyline', {...this.darkStyle, 'stroke-width': '0', fill: 'white'})
-            this.addAttributes(bprder2, {points: points2})
+                const border1 = this.add('polyline', {...this.darkStyle, 'stroke-width': '0', fill: 'white'})
+                this.addAttributes(border1, {points})
+            }
+            drawBorder(0, 1)
+            drawBorder(1, 2)
         }
 
         const drawTickAroundPt = (p: any, dir: any) => {
