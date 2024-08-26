@@ -1,5 +1,4 @@
 import {ChartProps, DrawFn, Point, Ranges, SVGChartsTypes} from "./types";
-import {catmullRom2bezier, getMinMax, scaleBetween} from "./utils";
 import {defRanges} from "./const";
 
 export class SVGCharts {
@@ -10,7 +9,6 @@ export class SVGCharts {
     readonly xSize: number;
     readonly ySize: number;
 
-    // TODO get from parameters
     readonly numFnPts = 101;
     readonly pnts: Point[] = [];
     readonly xAxis: boolean;
@@ -99,68 +97,7 @@ export class SVGCharts {
             fn: (x: number) => Math.exp(-(x * x) / 600) * 45 + 2
         })
         this.showPoint(score)
-
-        // this.drawPointsChart([-2, -2, -5, -8, 0 ,5, 4, 3, 0, -5, -9]);
     };
-
-    drawPointsChart = (graph: number[]) => {
-        var points: Point[] = this.normalizePoints(graph);
-
-        const chart = this.add('path', this.lightStyle)
-        this.addAttributes(chart, {d: this.makePath(points)})
-
-        for (var i = 0; i < points.length; i++) {
-            var circle = points[i];
-            var c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            c.setAttribute("cx", `${circle.x}`);
-            c.setAttribute("cy", `${circle.y}`);
-            c.setAttribute("r", "3");
-            this.container.appendChild(c);
-
-
-            var text = this.add(
-                'text',
-                {
-                    ...this.darkStyle,
-                    x: circle.x,
-                    y: circle.y,
-                    fill: 'blue',
-                }
-            )
-            var myText = document.createTextNode(`${graph[i]}`);
-            text.appendChild(myText);
-        }
-    }
-
-    normalizePoints = (graph: number[]): Point[] => {
-        const {minY, maxY} = getMinMax(graph);
-        const amph = Math.abs(minY - maxY);
-        const factorY = 0.9 * this.ySize / amph;
-        console.log(this.xSize, this.ySize, minY, maxY, amph, factorY);
-        const points: Point[] = [];
-        const scaledX: number[] = scaleBetween(
-            {
-                arr: Array.from(Array(graph.length), (_, i) => i),
-                scaledMin: this.xSize * 0.1,
-                scaledMax: this.xSize * 0.9
-            }
-        );
-        const scaledY: number[] = scaleBetween({arr: graph, scaledMin: this.ySize * 0.1, scaledMax: this.ySize * 0.9});
-        for (var i = 0; i < graph.length; i++) {
-            points.push({x: scaledX[i], y: -1 * scaledY[i] + this.ySize});
-        }
-        console.log(graph, scaledY)
-        return points
-    }
-
-    makePath = (points: any) => {
-        var result = "M" + points[0].x + "," + points[0].y + " ";
-        var catmull = catmullRom2bezier(points);
-        for (var i = 0; i < catmull.length; i++) {
-            result += "C" + catmull[i][0].x + "," + catmull[i][0].y + " " + catmull[i][1].x + "," + catmull[i][1].y + " " + catmull[i][2].x + "," + catmull[i][2].y + " ";
-        }
-        return result;
-    }
 
     private addAttributes(elt: SVGElement | HTMLElement, attr: any) {
         for (var key in attr) {
