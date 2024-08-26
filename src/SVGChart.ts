@@ -11,7 +11,7 @@ export class SVGCharts {
     readonly ySize: number;
 
     // TODO get from parameters
-    readonly numFnPts = 100;
+    readonly numFnPts = 101;
     readonly pnts: Point[] = [];
     readonly xAxis: boolean;
     readonly yAxis: boolean;
@@ -162,7 +162,7 @@ export class SVGCharts {
         return result;
     }
 
-    private addAttributes(elt: SVGElement, attr: any) {
+    private addAttributes(elt: SVGElement | HTMLElement, attr: any) {
         for (var key in attr) {
             elt.setAttribute(key, attr[key])
         }
@@ -385,22 +385,56 @@ export class SVGCharts {
         this.addAttributes(polyline, {points: pts.join(' ')})
     }
 
+    getXCoordOfScoreText = (score: number): number => {
+        const shift = score < 50 ? 6 : 4;
+        return Math.min(Math.max(0, this.pnts[score].x - shift * this.relativeUnit), this.xSize - 13 * this.relativeUnit)
+    }
+
     showPoint = (score: number) => {
         const circle = this.add('circle', this.darkStyle);
-        this.addAttributes(circle, {cx: this.scoreXY[0], cy: this.scoreXY[1], r: 5})
+        this.addAttributes(circle, {id: 'scorePoint', cx: this.scoreXY[0], cy: this.scoreXY[1], r: 0.75 * this.relativeUnit})
+
+        const gallo= this.add('circle', {
+                ...this.darkStyle,
+                'stroke-width': `${this.relativeUnit * 4}px`,
+                'opacity': 0.5,
+            }
+        );
+
+        this.addAttributes(gallo, {id: 'gallo', cx: this.scoreXY[0], cy: this.scoreXY[1], r: this.relativeUnit})
 
         const text = this.add(
             'text',
             {
                 ...this.darkStyle,
-                x: this.scoreXY[0] - 3 * this.relativeUnit,
-                y: this.scoreXY[1] - 8 * this.relativeUnit,
+                x: this.getXCoordOfScoreText(score),
+                y: this.scoreXY[1] - 6 * this.relativeUnit,
                 'stroke-width': `${this.relativeStrokeWidth}px`,
                 'font-size': `${8 * this.relativeUnit}px`,
+                id: 'scoreText',
             }
         )
         const mark = document.createTextNode(`${score}`);
         text.appendChild(mark);
+    }
+
+    updateScore = ({score}: {score: number}) => {
+        const scoreText = document.getElementById('scoreText');
+        this.addAttributes(scoreText, {
+            x: this.getXCoordOfScoreText(score),
+            y: this.pnts[score].y - 6 * this.relativeUnit,
+        });
+
+        ['gallo', 'scorePoint'].forEach((id) => {
+            const el = document.getElementById(id);
+            this.addAttributes(el, {
+                cx: this.pnts[score].x,
+                cy: this.pnts[score].y,
+            })
+
+        })
+
+        scoreText.childNodes[0].nodeValue = `${score}`
     }
 
     generateGradient = ({stops}: { stops: Ranges }): Element => {
