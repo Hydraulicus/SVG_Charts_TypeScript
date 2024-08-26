@@ -21,4 +21,14 @@ export const defRanges: Ranges = [
     }
 ];
 
-// export const legendColor = "#666"
+export const defLightStyle = {
+    fill: 'none',
+    stroke: 'black',
+    backgroundColor: '#eee'
+};
+
+export const defDarkStyle = {
+    fill: 'none',
+    stroke: 'black',
+    backgroundColor: '#555'
+}

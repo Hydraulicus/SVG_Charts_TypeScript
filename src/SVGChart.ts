@@ -1,5 +1,5 @@
 import {ChartProps, DrawFn, Point, Ranges, SVGChartsTypes} from "./types";
-import {defRanges} from "./const";
+import {defDarkStyle, defLightStyle, defRanges} from "./const";
 
 export class SVGCharts {
     private parent: HTMLElement;
@@ -26,14 +26,12 @@ export class SVGCharts {
     ranges: Ranges;
 
     readonly lightStyle = {
-        fill: 'none',
+        ...defLightStyle,
         stroke: `url(#${this.gradientId})`,
-        backgroundColor: '#eee'
     };
     readonly darkStyle = {
-        fill: 'none',
+        ...defDarkStyle,
         stroke: `url(#${this.gradientId})`,
-        backgroundColor: '#555'
     };
 
     constructor({
@@ -57,7 +55,6 @@ export class SVGCharts {
         this.relativeStrokeWidth = 0.5 * this.relativeUnit;
 
         this.ranges = ranges
-        // this.ctx = document.createElement("canvas").getContext("2d");
 
         this.container = this.addSVG({...this.lightStyle, width: this.xSize, height: this.ySize});
     }
@@ -99,9 +96,9 @@ export class SVGCharts {
         this.showPoint(score)
     };
 
-    private addAttributes(elt: SVGElement | HTMLElement, attr: any) {
-        for (var key in attr) {
-            elt.setAttribute(key, attr[key])
+    private addAttributes(elt: SVGElement | HTMLElement, attr: {[key: string]: string | number}) {
+        for (const key in attr) {
+            elt.setAttribute(key, `${attr[key]}`)
         }
         return elt
     }
@@ -119,32 +116,31 @@ export class SVGCharts {
 
 
     drawFn = ({score, xMin, xMax, yMin, yMax, opts, fn}: DrawFn) => {
-        if (opts && fn === undefined) {
-            fn = opts
-            opts = null
-        }
+        let y;
+        let p;
+        let half;
 
         if (opts && opts.doEqualizeAxes) {
             // This means to *increase* the frame just enough so that the axes are
             // equally scaled.
-            var xRatio = (xMax - xMin) / this.xSize
-            var yRatio = (yMax - yMin) / this.ySize
+            const xRatio = (xMax - xMin) / this.xSize;
+            const yRatio = (yMax - yMin) / this.ySize;
             if (xRatio < yRatio) {
-                var xMid = (xMax + xMin) / 2
-                var half = (xMax - xMin) / 2
+                const xMid = (xMax + xMin) / 2;
+                half = (xMax - xMin) / 2;
                 xMin = xMid - half * (yRatio / xRatio)
                 xMax = xMid + half * (yRatio / xRatio)
             } else {
-                var yMid = (yMax + yMin) / 2
-                var half = (yMax - yMin) / 2
+                const yMid = (yMax + yMin) / 2;
+                half = (yMax - yMin) / 2;
                 yMin = yMid - half * (xRatio / yRatio)
                 yMax = yMid + half * (xRatio / yRatio)
             }
         }
 
         const canvasPtFromXY = (x: number, y: number) => {
-            var xPerc = (x - xMin) / (xMax - xMin)
-            var yPerc = (y - yMin) / (yMax - yMin)
+            const xPerc = (x - xMin) / (xMax - xMin);
+            const yPerc = (y - yMin) / (yMax - yMin);
             return [xPerc * this.xSize, this.ySize - yPerc * this.ySize]
         }
 
@@ -234,28 +230,28 @@ export class SVGCharts {
             drawBorder(1, 2)
         }
 
-        const drawTickAroundPt = (p: any, dir: any) => {
-            var tick = this.add('line', this.lightStyle)
-            var a = [p[0], p[1]]
+        const drawTickAroundPt = (p: number[], dir: 0 | 1) => {
+            const tick = this.add('line', this.lightStyle);
+            const a = [p[0], p[1]];
             a[dir] -= 5
-            var b = [p[0], p[1]]
+            const b = [p[0], p[1]];
             b[dir] += 5
             this.addAttributes(tick, {x1: a[0], y1: a[1], x2: b[0], y2: b[1]})
         }
 
         if (this.xAxis) {
             // The x-axis.
-            var leftPt = canvasPtFromXY(xMin, 0)
-            var rightPt = canvasPtFromXY(xMax, 0)
+            const leftPt = canvasPtFromXY(xMin, 0);
+            const rightPt = canvasPtFromXY(xMax, 0);
             if (0 <= leftPt[1] && leftPt[1] < this.ySize) {
-                var xAxis = this.add('line', this.lightStyle)
+                const xAxis = this.add('line', this.lightStyle);
                 this.addAttributes(xAxis, {
                     x1: leftPt[0], y1: leftPt[1],
                     x2: rightPt[0], y2: rightPt[1]
                 })
                 if (this.ticks) {
-                    for (var x = Math.ceil(xMin); x <= Math.floor(xMax); x++) {
-                        var p = canvasPtFromXY(x, 0)
+                    for (let x = Math.ceil(xMin); x <= Math.floor(xMax); x++) {
+                        p = canvasPtFromXY(x, 0);
                         drawTickAroundPt(p, 1)  // 1 == vertical tick
                     }
                 }
@@ -265,17 +261,17 @@ export class SVGCharts {
         if (this.yAxis) {
             // The y-axis.
             if (this.yAxis) {
-                var botPt = canvasPtFromXY(0, yMin)
-                var topPt = canvasPtFromXY(0, yMax)
+                const botPt = canvasPtFromXY(0, yMin);
+                const topPt = canvasPtFromXY(0, yMax);
                 if (0 <= botPt[0] && botPt[0] < this.xSize) {
-                    var yAxis = this.add('line', this.lightStyle)
+                    const yAxis = this.add('line', this.lightStyle);
                     this.addAttributes(yAxis, {
                         x1: botPt[0], y1: botPt[1],
                         x2: topPt[0], y2: topPt[1]
                     })
                     if (this.ticks) {
-                        for (var y = Math.ceil(yMin); y <= Math.floor(yMax); y++) {
-                            var p = canvasPtFromXY(0, y)
+                        for (let y = Math.ceil(yMin); y <= Math.floor(yMax); y++) {
+                            p = canvasPtFromXY(0, y);
                             drawTickAroundPt(p, 0)  // 0 == horizontal tick
                         }
                     }
@@ -283,24 +279,25 @@ export class SVGCharts {
             }
         }
 
-        var xDelta = (xMax - xMin) / (this.numFnPts - 1)
-        var pts = []
-        var xPrev = xMin
-        var prevCanvasY = null
+        const xDelta = (xMax - xMin) / (this.numFnPts - 1);
+        const pts = [];
+        let xPrev = xMin;
+        let prevCanvasY = null;
 
 
-        for (var i = 0; i < this.numFnPts; i++) {
-            var x: number, xTarget: number = xMin + i * xDelta
+        for (let i = 0; i < this.numFnPts; i++) {
+            let x: number;
+            let xTarget: number = xMin + i * xDelta;
             do {
                 x = xTarget
-                var y: number = fn(x)
-                var canvasPt = canvasPtFromXY(x, y)
-                var perc = 0.5
+                y = fn(x);
+                let canvasPt = canvasPtFromXY(x, y);
+                let perc = 0.5;
                 while (prevCanvasY && Math.abs(prevCanvasY - canvasPt[1]) > 30 &&
                 perc > 0.0001) {
                     x = (1 - perc) * xPrev + perc * xTarget
-                    var y: number = fn(x)
-                    var canvasPt = canvasPtFromXY(x, y)
+                    y = fn(x);
+                    canvasPt = canvasPtFromXY(x, y);
                     perc /= 2
                 }
                 if (i === score) {
@@ -318,7 +315,7 @@ export class SVGCharts {
             drawLegend();
         }
 
-        var polyline = this.add('polyline', this.darkStyle)
+        const polyline = this.add('polyline', this.darkStyle);
         this.addAttributes(polyline, {points: pts.join(' ')})
     }
 

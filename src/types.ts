@@ -25,7 +25,7 @@ export type DrawFn = {
     yMin: number,
     yMax: number,
     // TODO - remove any or remove this parameter
-    opts: any,
+    opts: {[key: string]: any},
     fn: ChartFn
 }
 
