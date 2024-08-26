@@ -20,3 +20,5 @@ export const defRanges: Ranges = [
         color: "#189e05"
     }
 ];
+
+// export const legendColor = "#666"

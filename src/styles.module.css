@@ -1,1 +1,19 @@
 @import url('https://fonts.googleapis.com/css?family=Roboto:300,300i');
+
+/** Setting font for texts inside chart
+ * selector: parent_tag svg text
+ */
+body svg text {
+    font-family: Roboto, sans-serif;
+}
+
+/** Styling "legend" */
+.legend {
+    fill: gray;
+    stroke: gray;
+
+}
+
+polyline.legend {
+    fill: none;
+}

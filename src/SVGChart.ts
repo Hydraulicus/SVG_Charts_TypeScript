@@ -1,9 +1,10 @@
-import {ChartFn, ChartProps, DrawFn, Point, Ranges, SVGChartsTypes} from "./types";
+import {ChartProps, DrawFn, Point, Ranges, SVGChartsTypes} from "./types";
 import {catmullRom2bezier, getMinMax, scaleBetween} from "./utils";
 import {defRanges} from "./const";
 
 export class SVGCharts {
     private parent: HTMLElement;
+    private legendClassName: string;
     private container: SVGElement;
 
     readonly xSize: number;
@@ -22,6 +23,7 @@ export class SVGCharts {
     private gradientId = 'ChartGradient';
 
     private relativeUnit: number;
+    private relativeStrokeWidth: number;
 
     ranges: Ranges;
 
@@ -36,10 +38,9 @@ export class SVGCharts {
         backgroundColor: '#555'
     };
 
-
-
     constructor({
                     parent,
+                    legendClassName,
                     size = {w: 400, h: 264},
                     xAxis = true,
                     yAxis = true,
@@ -47,6 +48,7 @@ export class SVGCharts {
                     ranges = defRanges,
                 }: SVGChartsTypes) {
         this.parent = parent;
+        this.legendClassName = legendClassName;
         this.xSize = size.w;
         this.ySize = size.h;
         this.xAxis = xAxis;
@@ -54,6 +56,7 @@ export class SVGCharts {
         this.ticks = ticks;
 
         this.relativeUnit = 0.01 * size.h;
+        this.relativeStrokeWidth = 0.5 * this.relativeUnit;
 
         this.ranges = ranges
         // this.ctx = document.createElement("canvas").getContext("2d");
@@ -210,16 +213,15 @@ export class SVGCharts {
 
         const drawLegend = () => {
             const fontSize = 8 * this.relativeUnit;
+            const gap = fontSize;
             const [_, botY] = canvasPtFromXY(xMin, 0);
             const legendTopPadding = 1.5 * fontSize  + this.relativeUnit
 
             const commonProps = {
                 ...this.darkStyle,
                 y: botY + legendTopPadding,
-                'stroke-width': this.relativeUnit,
+                'stroke-width': `${this.relativeStrokeWidth}px`,
                 'font-size': `${fontSize}px`,
-                //TODO remove fixed font-family. Use as parameter or use class
-                'font-family': 'Roboto'
             }
 
             const drawLegendSign = ({i, startX}: {i: number, startX: number}): DOMRect => {
@@ -229,23 +231,29 @@ export class SVGCharts {
                     'text',
                     { ...commonProps, x: xPos, }
                 )
+                txt.classList.add(this.legendClassName);
                 const mark = document.createTextNode(`${this.ranges[i].name}`);
                 txt.appendChild(mark);
                 const xMiddle = this.pnts[Math.round((this.ranges[i].min + this.ranges[i].max)/2)].x;
+                const bbox = (txt as SVGSVGElement).getBBox();
+                const wordMiddle = bbox.x + 0.5 * bbox.width;
+                const halfLength = 0.6 * (legendTopPadding - bbox.height)
                 const points = `
                 ${xMiddle} ${botY + this.relativeUnit}
-                ${xMiddle} ${botY + this.relativeUnit + 100}
+                ${xMiddle} ${botY + this.relativeUnit + halfLength}
+                ${wordMiddle} ${botY + this.relativeUnit + halfLength}
+                ${wordMiddle} ${botY + this.relativeUnit + 2 * halfLength}
             `;
 
-                const bbox = (txt as SVGSVGElement).getBBox();
-                const ln = this.add('polyline', {...this.darkStyle, 'stroke-width': '2', fill: 'magenta'})
+                const ln = this.add('polyline', {...this.darkStyle, 'stroke-width': `${this.relativeStrokeWidth}px`})
+                ln.classList.add('legend')
                 this.addAttributes(ln, {points})
                 return bbox
             }
 
             const bbox0 = drawLegendSign({i: 0, startX: 0})
-            const bbox1 = drawLegendSign({i: 1, startX: bbox0.x + bbox0.width})
-            const bbox2 = drawLegendSign({i: 2, startX: bbox1.x + bbox1.width})
+            const bbox1 = drawLegendSign({i: 1, startX: gap + bbox0.x + bbox0.width})
+            drawLegendSign({i: 2, startX: gap + bbox1.x + bbox1.width})
         }
 
         const drawBorders = () => {
@@ -360,9 +368,8 @@ export class SVGCharts {
                 ...this.darkStyle,
                 x: this.scoreXY[0] - 3 * this.relativeUnit,
                 y: this.scoreXY[1] - 8 * this.relativeUnit,
-                'stroke-width': this.relativeUnit,
-                'font-size': 8 * this.relativeUnit,
-                'font-family': 'Roboto'
+                'stroke-width': `${this.relativeStrokeWidth}px`,
+                'font-size': `${8 * this.relativeUnit}px`,
             }
         )
         const mark = document.createTextNode(`${score}`);
