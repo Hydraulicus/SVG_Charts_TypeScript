@@ -11,7 +11,6 @@ body svg text {
 .legend {
     fill: gray;
     stroke: gray;
-
 }
 
 polyline.legend {

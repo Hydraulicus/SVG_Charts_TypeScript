@@ -213,9 +213,9 @@ export class SVGCharts {
 
         const drawLegend = () => {
             const fontSize = 8 * this.relativeUnit;
-            const gap = fontSize;
+            const gap = 0.5 * fontSize;
             const [_, botY] = canvasPtFromXY(xMin, 0);
-            const legendTopPadding = 1.5 * fontSize  + this.relativeUnit
+            const legendTopPadding = 1.5 * fontSize + this.relativeUnit
 
             const commonProps = {
                 ...this.darkStyle,
@@ -224,36 +224,61 @@ export class SVGCharts {
                 'font-size': `${fontSize}px`,
             }
 
-            const drawLegendSign = ({i, startX}: {i: number, startX: number}): DOMRect => {
-                const xPos = Math.max(this.pnts[Math.abs(this.ranges[i].min)].x, startX);
-
+            const putLegendSign = (i: number): SVGElement => {
                 const txt = this.add(
                     'text',
-                    { ...commonProps, x: xPos, }
+                    {...commonProps, x: 0,}
                 )
                 txt.classList.add(this.legendClassName);
                 const mark = document.createTextNode(`${this.ranges[i].name}`);
                 txt.appendChild(mark);
-                const xMiddle = this.pnts[Math.round((this.ranges[i].min + this.ranges[i].max)/2)].x;
-                const bbox = (txt as SVGSVGElement).getBBox();
-                const wordMiddle = bbox.x + 0.5 * bbox.width;
-                const halfLength = 0.6 * (legendTopPadding - bbox.height)
-                const points = `
-                ${xMiddle} ${botY + this.relativeUnit}
-                ${xMiddle} ${botY + this.relativeUnit + halfLength}
-                ${wordMiddle} ${botY + this.relativeUnit + halfLength}
-                ${wordMiddle} ${botY + this.relativeUnit + 2 * halfLength}
-            `;
 
-                const ln = this.add('polyline', {...this.darkStyle, 'stroke-width': `${this.relativeStrokeWidth}px`})
-                ln.classList.add('legend')
-                this.addAttributes(ln, {points})
-                return bbox
+                return txt
             }
 
-            const bbox0 = drawLegendSign({i: 0, startX: 0})
-            const bbox1 = drawLegendSign({i: 1, startX: gap + bbox0.x + bbox0.width})
-            drawLegendSign({i: 2, startX: gap + bbox1.x + bbox1.width})
+            const refineLegendMarks = ([mark0, mark1, mark2]: SVGElement[]) => {
+                const bbox0 = (mark0 as SVGSVGElement).getBBox();
+                const bbox1 = (mark1 as SVGSVGElement).getBBox();
+                const bbox2 = (mark2 as SVGSVGElement).getBBox();
+
+                const xMiddle0 = this.pnts[Math.round((this.ranges[0].min + this.ranges[0].max) / 2)].x;
+                const xMiddle1 = this.pnts[Math.round((this.ranges[1].min + this.ranges[1].max) / 2)].x;
+                const xMiddle2 = this.pnts[Math.round((this.ranges[2].min + this.ranges[2].max) / 2)].x;
+
+                const refinedX0 = Math.min(Math.max(0, xMiddle0 - 0.5 * bbox0.width), this.xSize - bbox0.width - gap - bbox1.width - gap - bbox2.width)
+                mark0.setAttribute('x', `${refinedX0}px`);
+                const refinedX1 = Math.min(Math.max(bbox0.width + gap, xMiddle1 - 0.5 * bbox1.width), this.xSize - bbox1.width - gap - bbox2.width)
+                mark1.setAttribute('x', `${refinedX1}px`);
+                const refinedX2 = Math.min(Math.max(0, xMiddle2 - 0.5 * bbox2.width), this.xSize - bbox2.width);
+                mark2.setAttribute('x', `${refinedX2}px`);
+            }
+
+            const drawLegendLinks = (marks: SVGElement[]) => {
+                marks.forEach((mark, i) => {
+                    const bbox = (mark as SVGSVGElement).getBBox();
+                    const xMiddle = this.pnts[Math.round((this.ranges[i].min + this.ranges[i].max) / 2)].x;
+
+                    const wordMiddle = bbox.x + 0.5 * bbox.width;
+                    const halfLength = 0.6 * (legendTopPadding - bbox.height)
+                    const points = `
+                        ${xMiddle} ${botY + this.relativeUnit}
+                        ${xMiddle} ${botY + this.relativeUnit + halfLength}
+                        ${wordMiddle} ${botY + this.relativeUnit + halfLength}
+                        ${wordMiddle} ${botY + this.relativeUnit + 2 * halfLength}
+                    `;
+
+                    const ln = this.add('polyline', {
+                        ...this.darkStyle,
+                        'stroke-width': `${this.relativeStrokeWidth}px`
+                    })
+                    ln.classList.add('legend')
+                    this.addAttributes(ln, {points})
+                })
+            }
+
+            const marks = Array.from([0, 1, 2], putLegendSign);
+            refineLegendMarks(marks);
+            drawLegendLinks(marks);
         }
 
         const drawBorders = () => {
@@ -352,7 +377,9 @@ export class SVGCharts {
         }
 
         drawBorders();
-        if (this.xAxis) { drawLegend(); }
+        if (this.xAxis) {
+            drawLegend();
+        }
 
         var polyline = this.add('polyline', this.darkStyle)
         this.addAttributes(polyline, {points: pts.join(' ')})
@@ -388,7 +415,7 @@ export class SVGCharts {
             elMin.setAttribute('stop-color', stop.color);
             gradient.appendChild(elMin);
             const elMax = document.createElementNS(this.svgNS, 'stop');
-            elMax.setAttribute('offset', `${stop.max}%`);
+            elMax.setAttribute('offset', `${stop.max + 1}%`);
             elMax.setAttribute('stop-color', stop.color);
             gradient.appendChild(elMax);
         });

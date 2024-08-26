@@ -11,18 +11,18 @@ const start = () => {
         ranges: [
             {
                 min: 0,
-                max: 7,
+                max: 79,
                 name: "Low",
                 color: "#AA1212"
             },
             {
-                min: 8,
-                max: 16,
+                min: 80,
+                max: 89,
                 name: "Borderline",
                 color: "#fd9c13"
             },
             {
-                min: 17,
+                min: 90,
                 max: 100,
                 name: "Normal",
                 color: "#189e05"
@@ -30,7 +30,7 @@ const start = () => {
         ]
     })
     SVGChart.addChart({
-        score: 15,
+        score: 56,
     });
 
 }
