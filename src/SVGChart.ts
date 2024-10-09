@@ -1,10 +1,13 @@
 import {ChartProps, DrawFn, Point, Ranges, SVGChartsTypes} from "./types";
 import {defDarkStyle, defLightStyle, defRanges} from "./const";
 
+type HeadlessSVGGetter = {score: number, name: string};
+
 export class SVGCharts {
     private parent: HTMLElement;
-    private legendClassName: string;
+    private readonly legendClassName: string;
     private container: SVGElement;
+    private readonly headless: boolean = false;
 
     readonly xSize: number;
     readonly ySize: number;
@@ -20,8 +23,8 @@ export class SVGCharts {
 
     private gradientId = 'ChartGradient';
 
-    private relativeUnit: number;
-    private relativeStrokeWidth: number;
+    private readonly relativeUnit: number;
+    private readonly relativeStrokeWidth: number;
 
     ranges: Ranges;
 
@@ -36,6 +39,7 @@ export class SVGCharts {
 
     constructor({
                     parent,
+                    headless = false,
                     legendClassName,
                     size = {w: 400, h: 264},
                     xAxis = true,
@@ -43,6 +47,7 @@ export class SVGCharts {
                     ticks = true,
                     ranges = defRanges,
                 }: SVGChartsTypes) {
+        this.headless = headless;
         this.parent = parent;
         this.legendClassName = legendClassName;
         this.xSize = size.w;
@@ -54,9 +59,9 @@ export class SVGCharts {
         this.relativeUnit = 0.01 * size.h;
         this.relativeStrokeWidth = 0.5 * this.relativeUnit;
 
-        this.ranges = ranges
+        this.ranges = ranges;
 
-        this.container = this.addSVG({...this.lightStyle, width: this.xSize, height: this.ySize});
+        this.container = this.headless ? null : this.addSVG({...this.lightStyle, width: this.xSize, height: this.ySize});
     }
 
     addSVG({
@@ -67,7 +72,7 @@ export class SVGCharts {
 
         const svgChart = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         this.svgNS = svgChart.namespaceURI;
-        svgChart.setAttribute("style", `background-color: ${backgroundColor}; stroke-width: ${2 * this.relativeUnit}px`);
+        svgChart.setAttribute("style", `background-color: ${backgroundColor}; stroke-width: ${this.getStrokeWidth()}`);
         svgChart.setAttribute("width", `${width}`);
         svgChart.setAttribute("height", `${height}`);
         svgChart.setAttribute("viewBox", `0 0 ${width} ${height}`);
@@ -399,4 +404,99 @@ export class SVGCharts {
         return defs
     }
 
+    private getStrokeWidth = (): string => `${2 * this.relativeUnit}px`
+
+    /** generating headless SVG **/
+    private generateHeadlessGradient = ({stops, id}: { stops: Ranges, id: string }): string => {
+        const body = stops.reduce((prevStops, stop) => {
+            return `
+                ${prevStops}
+                <stop offset="${stop.min}%" stop-color="${stop.color}"></stop>
+                <stop offset="${stop.max+1}%" stop-color="${stop.color}"></stop>
+            `
+        }, '')
+
+        return `
+        <linearGradient id="${id}" x1="0" x2="100%" y1="0" y2="0" gradientUnits="userSpaceOnUse">
+            ${body}
+        </linearGradient>
+`    }
+
+    private headlessSVG = ({score, name, backgroundColor, width, height}: HeadlessSVGGetter & ChartProps): string => {
+        const headlessGradientId = `${name}_headlessGradient`;
+        const body = `
+        <?xml version="1.0" encoding="UTF-8"?>
+        <svg style="background-color: ${backgroundColor}; stroke-width: ${this.getStrokeWidth()}" width="${width}" height="${height}"
+     viewBox="0 0 ${width} ${height}" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <defs>
+        ${this.generateHeadlessGradient({stops: this.ranges, id: headlessGradientId})}
+    </defs>
+    <line fill="none" stroke="url(#${headlessGradientId})" backgroundColor="${backgroundColor}" x1="0" y1="448.46153846153845" x2="800"
+          y2="448.46153846153845"></line>
+    <polyline fill="white" stroke="url(#${headlessGradientId})" backgroundColor="#555" stroke-width="0" points="
+                72 453.76153846153846
+                72 0
+                80 0
+                80 453.76153846153846
+            "></polyline>
+    <polyline fill="white" stroke="url(#${headlessGradientId})" backgroundColor="#555" stroke-width="0" points="
+                232.00000000000003 453.76153846153846
+                232.00000000000003 0
+                240 0
+                240 453.76153846153846
+            "></polyline>
+    <text fill="none" stroke="url(#${headlessGradientId})" backgroundColor="#555" y="517.3615384615384" stroke-width="2.65px"
+          font-size="42.4px" x="1.1054687500000284px" class="legend">Low
+    </text>
+    <text fill="none" stroke="url(#${headlessGradientId})" backgroundColor="#555" y="517.3615384615384" stroke-width="2.65px"
+          font-size="42.4px" x="98.9890625px" class="legend">Borderline
+    </text>
+    <text fill="none" stroke="url(#${headlessGradientId})" backgroundColor="#555" y="517.3615384615384" stroke-width="2.65px"
+          font-size="42.4px" x="451.6796875px" class="legend">Normal
+    </text>
+    <polyline fill="none" stroke="url(#${headlessGradientId})" backgroundColor="#555" stroke-width="2.65px" class="legend"
+              points="
+                        40.00000000000003 453.76153846153846
+                        40.00000000000003 465.70153846153846
+                        40 465.70153846153846
+                        40 477.64153846153846
+                    "></polyline>
+    <polyline fill="none" stroke="url(#${headlessGradientId})" backgroundColor="#555" stroke-width="2.65px" class="legend"
+              points="
+                        160 453.76153846153846
+                        160 465.70153846153846
+                        195.6218719482422 465.70153846153846
+                        195.6218719482422 477.64153846153846
+                    "></polyline>
+    <polyline fill="none" stroke="url(#${headlessGradientId})" backgroundColor="#555" stroke-width="2.65px" class="legend"
+              points="
+                        520 453.76153846153846
+                        520 465.70153846153846
+                        520 465.70153846153846
+                        520 477.64153846153846
+                    "></polyline>
+    <polyline fill="none" stroke="url(#${headlessGradientId})" backgroundColor="#555"
+              points="0 425.50638542302784 8.000000000000005 424.36208228614913 16.00000000000001 423.0500557721038 24.000000000000018 421.55117771157694 32.00000000000002 419.8450784185344 40.00000000000003 417.9102242361895 47.99999999999998 415.7240277822905 55.999999999999986 413.2629938655773 63.99999999999999 410.5029036571898 72 407.4190391808036 80 403.9864495289562 88 400.1802594200344 96.00000000000001 395.97601978498744 104.00000000000003 391.35009902440805 112.00000000000003 386.2801124201317 119.99999999999997 380.74538594161754 128.00000000000003 374.72744938255613 136 368.2105524293672 144.00000000000003 361.1821959375585 152 353.6336694156739 160 345.56058453442176 168.00000000000003 336.96339343725805 176 327.847879775444 184 318.22560977149715 192.00000000000003 308.1143302731561 200 297.53830073372154 208 286.5285463754086 216 275.1230204830599 224.00000000000003 263.3666648488692 232.00000000000003 251.31135884571546 240 239.01574943568176 248 226.5449565964164 256 213.97015113281958 264 201.36800458367526 272 188.8200138686728 280 176.41170637648474 288.00000000000006 164.23173428615524 296.00000000000006 152.37086995273154 304 140.9209170811481 312 129.97355506691224 320 119.61913620826942 328 109.94545740884553 336.00000000000006 101.03652941860508 344.00000000000006 92.9713675434644 352 85.82282804467667 360 79.65651412041001 368 74.52977440526269 376 70.49081535033832 384.00000000000006 67.57794668869673 392 65.8189764997411 400 65.23076923076923 408 65.8189764997411 416 67.57794668869673 424 70.49081535033838 432 74.52977440526274 440.00000000000006 79.65651412041012 448.00000000000006 85.82282804467667 456.00000000000006 92.9713675434644 464.00000000000006 101.03652941860514 472 109.94545740884553 480 119.61913620826942 488 129.97355506691224 496 140.9209170811481 504 152.3708699527316 512 164.2317342861553 520 176.4117063764848 528 188.8200138686729 536 201.36800458367526 544 213.97015113281958 552 226.5449565964164 560 239.0157494356818 568 251.31135884571546 576.0000000000001 263.3666648488694 584 275.1230204830599 592.0000000000001 286.5285463754087 600 297.5383007337216 608 308.1143302731561 616 318.22560977149715 624 327.847879775444 632 336.9633934372581 640 345.56058453442176 648 353.63366941567404 656 361.1821959375585 664 368.2105524293672 672.0000000000001 374.7274493825562 680.0000000000001 380.74538594161766 688.0000000000001 386.2801124201317 696 391.35009902440805 704 395.97601978498744 712 400.1802594200344 720 403.98644952895626 728 407.4190391808036 736 410.5029036571898 744 413.2629938655773 752 415.7240277822905 760 417.9102242361895 768.0000000000001 419.8450784185344 776.0000000000001 421.55117771157694 784 423.0500557721038 792.0000000000001 424.36208228614913 800 425.50638542302784"></polyline>
+    <circle fill="none" stroke="url(#${headlessGradientId})" backgroundColor="#555" id="scorePoint" cx="296.00000000000006"
+            cy="152.37086995273154" r="3.9749999999999996"></circle>
+    <circle fill="none" stroke="url(#${headlessGradientId})" backgroundColor="#555" stroke-width="21.2px" opacity="0.5"
+            id="gallo" cx="296.00000000000006" cy="152.37086995273154" r="5.3"></circle>
+    <text fill="none" stroke="url(#ChartGradient)" backgroundColor="#555" x="264.20000000000005" y="120.57086995273154"
+          stroke-width="2.65px" font-size="42.4px" id="scoreText">${score}
+    </text>
+</svg>
+        `
+        return body
+    }
+
+    /** end of generating headless SVG **/
+
+    getHeadlessSVGChart = (args: HeadlessSVGGetter): string => this.headlessSVG(
+        {
+            ...args,
+            ...this.lightStyle,
+            width: this.xSize,
+            height: this.ySize
+        }
+    )
 }

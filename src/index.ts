@@ -2,9 +2,11 @@ import {SVGCharts} from "./SVGChart";
 import "./styles.module.css"
 
 const start = () => {
-    let score = 19;
+    let score = 18;
+    const headless = false;
     const SVGChart = new SVGCharts({
         parent: document.body,
+        headless,
         legendClassName: "legend", /** looks example of class in styles.module.css*/
         size: {w: 800, h: 530},
         yAxis: false,
@@ -12,27 +14,30 @@ const start = () => {
         ranges: [
             {
                 min: 0,
-                max: 9,
+                max: 49,
                 name: "Low",
                 color: "#AA1212"
             },
             {
-                min: 10,
-                max: 29,
+                min: 50,
+                max: 89,
                 name: "Borderline",
                 color: "#fd9c13"
             },
             {
-                min: 30,
+                min: 90,
                 max: 100,
                 name: "Normal",
                 color: "#189e05"
             }
         ]
     })
-    SVGChart.addChart({
-        score: score,
-    });
+
+    if (!headless) {
+        SVGChart.addChart({ score: score});
+    }
+
+    const headlessSVG = SVGChart.getHeadlessSVGChart({ score: score, name: "headless1"});
 
     /** next lines just for demo */
     document.body.appendChild(document.createElement("br"));
@@ -54,6 +59,15 @@ const start = () => {
     }
 
     document.body.appendChild(iFeild);
+
+    document.body.appendChild(document.createElement("div"))
+        .setAttribute("id", "headlessSVG_container")
+
+    // TODO insert as img
+    var el = document.getElementById("headlessSVG_container")
+        el.innerHTML=headlessSVG
+    ;
+
 }
 
 document.body.onload = start;

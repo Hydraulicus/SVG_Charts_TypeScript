@@ -14,6 +14,7 @@ export interface SVGChartsTypes {
     xAxis?: boolean,
     yAxis?: boolean,
     ticks?: boolean,
+    headless?: boolean,
     ranges: Ranges
 }
 
