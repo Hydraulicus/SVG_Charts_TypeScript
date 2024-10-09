@@ -33,9 +33,9 @@ const start = () => {
         ]
     })
 
-    if (!headless) {
+    // if (!headless) {
         SVGChart.addChart({ score: score});
-    }
+    // }
 
     const headlessSVG = SVGChart.getHeadlessSVGChart({ score: score, name: "headless1"});
 

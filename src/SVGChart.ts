@@ -2,6 +2,7 @@ import {ChartFn, ChartProps, DrawFn, Point, Ranges, SVGChartsTypes} from "./type
 import {defDarkStyle, defLightStyle, defRanges} from "./const";
 
 type HeadlessSVGGetter = {score: number, name: string};
+type StructureElAttr = { [key: string]: string | number };
 
 // TODO move to const
 const defChartProps = {
@@ -49,6 +50,8 @@ export class SVGCharts {
         stroke: `url(#${this.gradientId})`,
     };
 
+    private chartStructure: {eltName: string, attr?: StructureElAttr}[];
+
     constructor({
                     parent,
                     headless = false,
@@ -73,12 +76,15 @@ export class SVGCharts {
 
         this.ranges = ranges;
 
-        this.container = this.headless ? null : this.addSVG({...this.lightStyle, width: this.xSize, height: this.ySize});
+        // this.container = this.headless ? null : this.addSVG({...this.lightStyle, width: this.xSize, height: this.ySize});
+        this.container = this.addSVG({...this.lightStyle, width: this.xSize, height: this.ySize});
 
         this.chartProps = {
             ...defChartProps,
             ...this.refineProps(defChartProps)
         }
+
+        this.chartStructure = [];
     }
 
     addSVG({
@@ -110,13 +116,21 @@ export class SVGCharts {
     };
 
     private addAttributes(elt: SVGElement | HTMLElement, attr: {[key: string]: string | number}) {
+        if (this.headless) {
+            return
+        }
         for (const key in attr) {
             elt.setAttribute(key, `${attr[key]}`)
         }
         return elt
     }
 
-    add(eltName: string, attr?: { [key: string]: string | number }): SVGElement {
+    add(eltName: string, attr?: StructureElAttr): SVGElement | null {
+        this.chartStructure.push({eltName: eltName, attr: attr});
+        if (this.headless) {
+            return
+        }
+
         const elt = document.createElementNS(this.svgNS, eltName) as SVGElement;
         this.container.appendChild(elt);
 
@@ -153,7 +167,6 @@ export class SVGCharts {
                 yMax = yMid + half * (xRatio / yRatio)
             }
         }
-        console.log(' refined: ', xMin, yMin, xMax, yMax)
         return {xMin, yMin, xMax, yMax}
     }
 
@@ -177,22 +190,34 @@ export class SVGCharts {
                 'font-size': `${fontSize}px`,
             }
 
-            const putLegendSign = (i: number): SVGElement => {
+            const putLegendSign = (i: number): SVGElement | null => {
                 const txt = this.add(
                     'text',
-                    {...commonProps, x: 0,}
+                    {...commonProps, x: 0, val: this.ranges[i].name}
                 )
-                txt.classList.add(this.legendClassName);
+
+                if (txt) {
+
+
+                // TODO move this props to  this.add
+                // txt.classList.add(this.legendClassName);
+
                 const mark = document.createTextNode(`${this.ranges[i].name}`);
                 txt.appendChild(mark);
 
                 return txt
+                }
             }
 
             const refineLegendMarks = ([mark0, mark1, mark2]: SVGElement[]) => {
-                const bbox0 = (mark0 as SVGSVGElement).getBBox();
-                const bbox1 = (mark1 as SVGSVGElement).getBBox();
-                const bbox2 = (mark2 as SVGSVGElement).getBBox();
+                if (this.headless) {
+                    return
+                }
+
+                // TODO remove hardcoded values
+                const bbox0 = (mark0 as SVGSVGElement)?.getBBox() || {width: 120, height: 40, x: 100};
+                const bbox1 = (mark1 as SVGSVGElement)?.getBBox() || {width: 120, height: 40, x: 100};
+                const bbox2 = (mark2 as SVGSVGElement)?.getBBox() || {width: 120, height: 40, x: 100};
 
                 const xMiddle0 = this.pnts[Math.round((this.ranges[0].min + this.ranges[0].max) / 2)].x;
                 const xMiddle1 = this.pnts[Math.round((this.ranges[1].min + this.ranges[1].max) / 2)].x;
@@ -207,25 +232,26 @@ export class SVGCharts {
             }
 
             const drawLegendLinks = (marks: SVGElement[]) => {
+                console.log(' marks =', marks)
                 marks.forEach((mark, i) => {
-                    const bbox = (mark as SVGSVGElement).getBBox();
+                    const bbox = (mark as SVGSVGElement)?.getBBox() || {width: 120, height: 40, x: 100};
                     const xMiddle = this.pnts[Math.round((this.ranges[i].min + this.ranges[i].max) / 2)].x;
 
                     const wordMiddle = bbox.x + 0.5 * bbox.width;
                     const halfLength = 0.6 * (legendTopPadding - bbox.height)
-                    const points = `
-                        ${xMiddle} ${botY + this.relativeUnit}
-                        ${xMiddle} ${botY + this.relativeUnit + halfLength}
-                        ${wordMiddle} ${botY + this.relativeUnit + halfLength}
-                        ${wordMiddle} ${botY + this.relativeUnit + 2 * halfLength}
-                    `;
+                    const points = `${xMiddle} ${botY + this.relativeUnit} `
+                        + `${xMiddle} ${botY + this.relativeUnit + halfLength} `
+                        + `${wordMiddle} ${botY + this.relativeUnit + halfLength} `
+                        + `${wordMiddle} ${botY + this.relativeUnit + 2 * halfLength}`;
 
                     const ln = this.add('polyline', {
                         ...this.darkStyle,
-                        'stroke-width': `${this.relativeStrokeWidth}px`
+                        'stroke-width': `${this.relativeStrokeWidth}px`,
+                        points
                     })
-                    ln.classList.add('legend')
-                    this.addAttributes(ln, {points})
+                    // TODO move this props to  this.add
+                    // ln.classList.add('legend')
+                    // this.addAttributes(ln, {points})
                 })
             }
 
@@ -237,26 +263,30 @@ export class SVGCharts {
         const drawBorders = () => {
             const [_, botY] = canvasPtFromXY(xMin, 0);
             const drawBorder = (i0: number, i1: number) => {
-                const points = `
-                ${this.pnts[Math.abs(this.ranges[i0].max)].x} ${botY + this.relativeUnit}
-                ${this.pnts[Math.abs(this.ranges[i0].max)].x} 0
-                ${this.pnts[Math.abs(this.ranges[i1].min)].x} 0
-                ${this.pnts[Math.abs(this.ranges[i1].min)].x} ${botY + this.relativeUnit}
-            `;
-                const border1 = this.add('polyline', {...this.darkStyle, 'stroke-width': '0', fill: 'magenta'})
-                this.addAttributes(border1, {points})
+                const points = `${this.pnts[Math.abs(this.ranges[i0].max)].x} ${botY + this.relativeUnit} `
+                + `${this.pnts[Math.abs(this.ranges[i0].max)].x} 0 `
+                + `${this.pnts[Math.abs(this.ranges[i1].min)].x} 0 `
+                + `${this.pnts[Math.abs(this.ranges[i1].min)].x} ${botY + this.relativeUnit}`;
+
+                const border1 = this.add('polyline', {
+                    ...this.darkStyle,
+                    'stroke-width': '0',
+                    fill: 'white', points
+                })
             }
             drawBorder(0, 1)
             drawBorder(1, 2)
         }
 
         const drawTickAroundPt = (p: number[], dir: 0 | 1) => {
-            const tick = this.add('line', this.lightStyle);
             const a = [p[0], p[1]];
             a[dir] -= 5
             const b = [p[0], p[1]];
             b[dir] += 5
-            this.addAttributes(tick, {x1: a[0], y1: a[1], x2: b[0], y2: b[1]})
+            const tick = this.add('line', {
+                ...this.lightStyle,
+                x1: a[0], y1: a[1], x2: b[0], y2: b[1]
+            });
         }
 
         if (this.xAxis) {
@@ -264,11 +294,11 @@ export class SVGCharts {
             const leftPt = canvasPtFromXY(xMin, 0);
             const rightPt = canvasPtFromXY(xMax, 0);
             if (0 <= leftPt[1] && leftPt[1] < this.ySize) {
-                const xAxis = this.add('line', this.lightStyle);
-                this.addAttributes(xAxis, {
+                this.add('line', {
+                    ...this.lightStyle,
                     x1: leftPt[0], y1: leftPt[1],
                     x2: rightPt[0], y2: rightPt[1]
-                })
+                });
                 if (this.ticks) {
                     for (let x = Math.ceil(xMin); x <= Math.floor(xMax); x++) {
                         p = canvasPtFromXY(x, 0);
@@ -284,11 +314,11 @@ export class SVGCharts {
                 const botPt = canvasPtFromXY(0, yMin);
                 const topPt = canvasPtFromXY(0, yMax);
                 if (0 <= botPt[0] && botPt[0] < this.xSize) {
-                    const yAxis = this.add('line', this.lightStyle);
-                    this.addAttributes(yAxis, {
+                    this.add('line', {
+                        ...this.lightStyle,
                         x1: botPt[0], y1: botPt[1],
                         x2: topPt[0], y2: topPt[1]
-                    })
+                    });
                     if (this.ticks) {
                         for (let y = Math.ceil(yMin); y <= Math.floor(yMax); y++) {
                             p = canvasPtFromXY(0, y);
@@ -335,8 +365,7 @@ export class SVGCharts {
             drawLegend();
         }
 
-        const polyline = this.add('polyline', this.darkStyle);
-        this.addAttributes(polyline, {points: pts.join(' ')})
+        const polyline = this.add('polyline', {...this.darkStyle, points: pts.join(' ')});
     }
 
     getXCoordOfScoreText = (score: number): number => {
@@ -366,10 +395,13 @@ export class SVGCharts {
                 'stroke-width': `${this.relativeStrokeWidth}px`,
                 'font-size': `${8 * this.relativeUnit}px`,
                 id: 'scoreText',
+                val: score
             }
         )
-        const mark = document.createTextNode(`${score}`);
-        text.appendChild(mark);
+        if (text) {
+            const mark = document.createTextNode(`${score}`);
+            text.appendChild(mark);
+        }
     }
 
     updateScore = ({score}: {score: number}) => {
@@ -437,8 +469,18 @@ export class SVGCharts {
         </linearGradient>
 `    }
 
+
+
     private headlessSVG = ({score, name, backgroundColor, width, height}: HeadlessSVGGetter & ChartProps): string => {
+        const genTag = ({eltName, attr}: {eltName: string, attr?: StructureElAttr}): string => {
+            const attrs: string = Object.keys(attr).reduce((composed, key) => `${composed} ${key}="${attr[key]}"`, '')
+            return `<${eltName} ${attrs}></${eltName}>`
+        }
+
+
         const headlessGradientId = `${name}_headlessGradient`;
+        console.log('this.chartStructure=', this.chartStructure);
+        const content: string = this.chartStructure.map(genTag).join(' ');
         const body = `
         <?xml version="1.0" encoding="UTF-8"?>
         <svg style="background-color: ${backgroundColor}; stroke-width: ${this.getStrokeWidth()}" width="${width}" height="${height}"
@@ -446,7 +488,13 @@ export class SVGCharts {
     <defs>
         ${this.generateHeadlessGradient({stops: this.ranges, id: headlessGradientId})}
     </defs>
-    <line fill="none" stroke="url(#${headlessGradientId})" backgroundColor="${backgroundColor}" x1="0" y1="448.46153846153845" x2="800"
+    ${content}
+</svg>
+        `
+
+
+        const example = `
+<line fill="none" stroke="url(#${headlessGradientId})" backgroundColor="${backgroundColor}" x1="0" y1="448.46153846153845" x2="800"
           y2="448.46153846153845"></line>
     <polyline fill="white" stroke="url(#${headlessGradientId})" backgroundColor="#555" stroke-width="0" points="
                 72 453.76153846153846
@@ -499,8 +547,10 @@ export class SVGCharts {
     <text fill="none" stroke="url(#ChartGradient)" backgroundColor="#555" x="264.20000000000005" y="120.57086995273154"
           stroke-width="2.65px" font-size="42.4px" id="scoreText">${score}
     </text>
-</svg>
-        `
+`
+
+
+
         return body
     }
 
