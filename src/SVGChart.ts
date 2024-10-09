@@ -1,7 +1,17 @@
-import {ChartProps, DrawFn, Point, Ranges, SVGChartsTypes} from "./types";
+import {ChartFn, ChartProps, DrawFn, Point, Ranges, SVGChartsTypes} from "./types";
 import {defDarkStyle, defLightStyle, defRanges} from "./const";
 
 type HeadlessSVGGetter = {score: number, name: string};
+
+// TODO move to const
+const defChartProps = {
+    opts: {doEqualizeAxes: true, doDrawAxes: true},
+    xMin: -2.5,
+    xMax: 2.5,
+    yMin: -10,
+    yMax: 55,
+    fn: (x: number) => Math.exp(-(x * x) / 600) * 45 + 2
+};
 
 export class SVGCharts {
     private parent: HTMLElement;
@@ -25,6 +35,8 @@ export class SVGCharts {
 
     private readonly relativeUnit: number;
     private readonly relativeStrokeWidth: number;
+
+    private chartProps = defChartProps;
 
     ranges: Ranges;
 
@@ -62,6 +74,11 @@ export class SVGCharts {
         this.ranges = ranges;
 
         this.container = this.headless ? null : this.addSVG({...this.lightStyle, width: this.xSize, height: this.ySize});
+
+        this.chartProps = {
+            ...defChartProps,
+            ...this.refineProps(defChartProps)
+        }
     }
 
     addSVG({
@@ -88,16 +105,7 @@ export class SVGCharts {
     }
 
     addChart({score}: { score: number }) {
-        const opts = {doEqualizeAxes: true, doDrawAxes: true}
-        this.drawFn({
-            score,
-            xMin: -2.5,
-            xMax: 2.5,
-            yMin: -10,
-            yMax: 55,
-            opts,
-            fn: (x: number) => Math.exp(-(x * x) / 600) * 45 + 2
-        })
+        this.drawFn({ score, ...this.chartProps })
         this.showPoint(score)
     };
 
@@ -119,12 +127,15 @@ export class SVGCharts {
         return elt;
     }
 
+    getPtFromXY({x, y}:{x: number, y: number}){
+        const {xMin, yMin, xMax, yMax} = this.chartProps;
+        const xPerc = (x - xMin) / (xMax - xMin);
+        const yPerc = (y - yMin) / (yMax - yMin);
+        return [xPerc * this.xSize, this.ySize - yPerc * this.ySize]
+    }
 
-    drawFn = ({score, xMin, xMax, yMin, yMax, opts, fn}: DrawFn) => {
-        let y;
-        let p;
+    refineProps({xMin, yMin, xMax, yMax, opts}:{xMin: number, yMin: number, xMax: number, yMax: number, opts: {[key: string]: any}, fn: ChartFn}) {
         let half;
-
         if (opts && opts.doEqualizeAxes) {
             // This means to *increase* the frame just enough so that the axes are
             // equally scaled.
@@ -142,12 +153,16 @@ export class SVGCharts {
                 yMax = yMid + half * (xRatio / yRatio)
             }
         }
+        console.log(' refined: ', xMin, yMin, xMax, yMax)
+        return {xMin, yMin, xMax, yMax}
+    }
 
-        const canvasPtFromXY = (x: number, y: number) => {
-            const xPerc = (x - xMin) / (xMax - xMin);
-            const yPerc = (y - yMin) / (yMax - yMin);
-            return [xPerc * this.xSize, this.ySize - yPerc * this.ySize]
-        }
+    drawFn = (props: DrawFn) => {
+        const {score, xMin, yMin, xMax, yMax, fn} = props;
+        let y;
+        let p;
+
+        const canvasPtFromXY = (x: number, y: number) => this.getPtFromXY({x, y});
 
         const drawLegend = () => {
             const fontSize = 8 * this.relativeUnit;
@@ -228,7 +243,7 @@ export class SVGCharts {
                 ${this.pnts[Math.abs(this.ranges[i1].min)].x} 0
                 ${this.pnts[Math.abs(this.ranges[i1].min)].x} ${botY + this.relativeUnit}
             `;
-                const border1 = this.add('polyline', {...this.darkStyle, 'stroke-width': '0', fill: 'white'})
+                const border1 = this.add('polyline', {...this.darkStyle, 'stroke-width': '0', fill: 'magenta'})
                 this.addAttributes(border1, {points})
             }
             drawBorder(0, 1)
