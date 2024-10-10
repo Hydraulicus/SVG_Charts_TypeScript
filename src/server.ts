@@ -1,13 +1,12 @@
 import { writeFileSync } from "fs";
 import {SVGCharts} from "./SVGChart";
 
-let score = 18;
+const score = 36;
 const headless = true;
 const SVGChart = new SVGCharts({
     name: "headlessChart",
     parent: null,
     headless,
-    // TODO remove classes
     size: {w: 800, h: 530},
     yAxis: false,
     ticks: false,
@@ -36,8 +35,6 @@ const SVGChart = new SVGCharts({
     SVGChart.addChart({ score: score});
 
 const headlessSVG = SVGChart.getHeadlessSVGChart({ score: score});
-
-console.log(headlessSVG)
 
 writeFileSync("chart.svg", headlessSVG, {
     flag: "w"

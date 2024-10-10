@@ -374,17 +374,24 @@ export class SVGCharts {
     }
 
     showPoint = (score: number) => {
-        const circle = this.add('circle', this.getDarkStyle());
-        this.addAttributes(circle, {id: 'scorePoint', cx: this.scoreXY[0], cy: this.scoreXY[1], r: 0.75 * this.relativeUnit})
+        this.add('circle', {
+            ...this.getDarkStyle(),
+            id: 'scorePoint',
+            cx: this.scoreXY[0],
+            cy: this.scoreXY[1],
+            r: 0.75 * this.relativeUnit
+        });
 
-        const gallo= this.add('circle', {
+        this.add('circle', {
                 ...this.getDarkStyle(),
                 'stroke-width': `${this.relativeUnit * 4}px`,
                 'opacity': 0.5,
+                id: 'gallo',
+                cx: this.scoreXY[0],
+                cy: this.scoreXY[1],
+                r: this.relativeUnit
             }
         );
-
-        this.addAttributes(gallo, {id: 'gallo', cx: this.scoreXY[0], cy: this.scoreXY[1], r: this.relativeUnit})
 
         const text = this.add(
             'text',
@@ -427,7 +434,6 @@ export class SVGCharts {
 
         const defs = document.createElementNS(this.svgNS, 'defs');
         const gradient = document.createElementNS(this.svgNS, 'linearGradient');
-
 
         stops.forEach(stop => {
             const elMin = document.createElementNS(this.svgNS, 'stop');
@@ -474,6 +480,8 @@ export class SVGCharts {
             return `
                 <${eltName} ${attrs}>${content}</${eltName}>`
         }
+
+        console.log(' this.chartStructure :', this.chartStructure)
 
         const content: string = this.chartStructure.map(genTag).join(' ');
         const body = `<?xml version="1.0" encoding="UTF-8"?>
