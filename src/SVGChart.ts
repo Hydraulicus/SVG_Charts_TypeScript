@@ -6,7 +6,7 @@ type HeadlessSVGGetter = {score: number};
 type StructureElAttr = { [key: string]: string | number };
 
 export class SVGCharts {
-    private name: string= '';
+    private readonly name: string= '';
     private parent: HTMLElement | null; // null - for headless generation
     private container: SVGElement;
     private readonly headless: boolean = false;
@@ -30,7 +30,7 @@ export class SVGCharts {
 
     private readonly relativeFontSize: number;
 
-    private chartProps = defChartProps;
+    private readonly chartProps = defChartProps;
 
     ranges: Ranges;
 
@@ -43,7 +43,7 @@ export class SVGCharts {
         stroke: `url(#${this.gradientId})`,
     };
 
-    private chartStructure: {eltName: string, attr?: StructureElAttr}[];
+    private readonly chartStructure: {eltName: string, attr?: StructureElAttr}[];
 
     constructor({
                     parent,
@@ -246,7 +246,7 @@ export class SVGCharts {
                         + `${wordMiddle} ${botY + this.relativeUnit + halfLength} `
                         + `${wordMiddle} ${botY + this.relativeUnit + 2 * halfLength}`;
 
-                    const ln = this.add('polyline', {
+                    this.add('polyline', {
                         ...this.getDarkStyle(),
                         'stroke-width': `${this.relativeStrokeWidth}px`,
                         'stroke': 'gray',
@@ -268,11 +268,7 @@ export class SVGCharts {
                 + `${this.pnts[Math.abs(this.ranges[i1].min)].x} 0 `
                 + `${this.pnts[Math.abs(this.ranges[i1].min)].x} ${botY + this.relativeUnit}`;
 
-                const border1 = this.add('polyline', {
-                    ...this.getDarkStyle(),
-                    'stroke-width': '0',
-                    fill: 'white', points
-                })
+                this.add('polyline', {...this.getDarkStyle(), 'stroke-width': '0', fill: 'white', points })
             }
             drawBorder(0, 1)
             drawBorder(1, 2)
@@ -283,10 +279,7 @@ export class SVGCharts {
             a[dir] -= 5
             const b = [p[0], p[1]];
             b[dir] += 5
-            const tick = this.add('line', {
-                ...this.getLightStyle(),
-                x1: a[0], y1: a[1], x2: b[0], y2: b[1]
-            });
+            this.add('line', { ...this.getLightStyle(), x1: a[0], y1: a[1], x2: b[0], y2: b[1] });
         }
 
         if (this.xAxis) {
@@ -365,7 +358,7 @@ export class SVGCharts {
             drawLegend();
         }
 
-        const polyline = this.add('polyline', {...this.getDarkStyle(), points: pts.join(' ')});
+        this.add('polyline', {...this.getDarkStyle(), points: pts.join(' ')});
     }
 
     getXCoordOfScoreText = (score: number): number => {
@@ -473,7 +466,7 @@ export class SVGCharts {
         </linearGradient>
 `    }
 
-    private headlessSVG = ({score, backgroundColor, width, height}: HeadlessSVGGetter & ChartProps): string => {
+    private headlessSVG = ({backgroundColor, width, height}: HeadlessSVGGetter & ChartProps): string => {
         const genTag = ({eltName, attr}: {eltName: string, attr?: StructureElAttr}): string => {
             const attrs: string = Object.keys(attr).reduce((composed, key) => `${composed} ${key}="${attr[key]}"`, '')
             const content = eltName === 'text' ? attr.val : '';
@@ -481,10 +474,8 @@ export class SVGCharts {
                 <${eltName} ${attrs}>${content}</${eltName}>`
         }
 
-        console.log(' this.chartStructure :', this.chartStructure)
-
         const content: string = this.chartStructure.map(genTag).join(' ');
-        const body = `<?xml version="1.0" encoding="UTF-8"?>
+        return `<?xml version="1.0" encoding="UTF-8"?>
         <svg id="${this.name}" style="background-color: ${backgroundColor}; stroke-width: ${this.getStrokeWidth()}" width="${width}" height="${height}"
             viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
             <defs>
@@ -492,8 +483,7 @@ export class SVGCharts {
             </defs>
             ${content}
         </svg>
-        `;
-        return body
+        `
     }
 
     /** end of generating headless SVG **/

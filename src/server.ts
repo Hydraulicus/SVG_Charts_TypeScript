@@ -13,12 +13,12 @@ const SVGChart = new SVGCharts({
     ranges: [
         {
             min: 0,
-            max: 9,
+            max: 13,
             name: "Low",
             color: "#AA1212"
         },
         {
-            min: 10,
+            min: 14,
             max: 89,
             name: "Borderline",
             color: "#fd9c13"
