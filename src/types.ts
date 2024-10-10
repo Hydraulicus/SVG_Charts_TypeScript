@@ -15,7 +15,8 @@ export interface SVGChartsTypes {
     yAxis?: boolean,
     ticks?: boolean,
     headless?: boolean,
-    ranges: Ranges
+    ranges: Ranges,
+    name: string;
 }
 
 export type ChartFn = (x: number) => number;

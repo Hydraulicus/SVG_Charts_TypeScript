@@ -5,8 +5,10 @@ const start = () => {
     let score = 18;
     const headless = false;
     const SVGChart = new SVGCharts({
+        name: "chart1",
         parent: document.body,
         headless,
+        // TODO remove classes
         legendClassName: "legend", /** looks example of class in styles.module.css*/
         size: {w: 800, h: 530},
         yAxis: false,
@@ -37,7 +39,7 @@ const start = () => {
         SVGChart.addChart({ score: score});
     // }
 
-    const headlessSVG = SVGChart.getHeadlessSVGChart({ score: score, name: "headless1"});
+    const headlessSVG = SVGChart.getHeadlessSVGChart({ score: score});
 
     /** next lines just for demo */
     document.body.appendChild(document.createElement("br"));
@@ -63,10 +65,8 @@ const start = () => {
     document.body.appendChild(document.createElement("div"))
         .setAttribute("id", "headlessSVG_container")
 
-    // TODO insert as img
-    var el = document.getElementById("headlessSVG_container")
-        el.innerHTML=headlessSVG
-    ;
+    // const el = document.getElementById("headlessSVG_container")
+    document.getElementById("headlessSVG_container").innerHTML=headlessSVG;
 
 }
 
