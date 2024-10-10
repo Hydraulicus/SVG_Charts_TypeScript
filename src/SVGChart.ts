@@ -208,7 +208,7 @@ export class SVGCharts {
                     return txt
                 }
             }
-
+            let refinedX:{[p: string]: number};
             const refineLegendMarks = ([mark0, mark1, mark2]: SVGElement[]) => {
                 const bbox0 = (mark0 as SVGSVGElement)?.getBBox() || calcRoughBox.call(this, this.ranges[0].name);
                 const bbox1 = (mark1 as SVGSVGElement)?.getBBox() || calcRoughBox.call(this, this.ranges[1].name);
@@ -218,7 +218,7 @@ export class SVGCharts {
                 const xMiddle1 = this.pnts[Math.round((this.ranges[1].min + this.ranges[1].max) / 2)].x;
                 const xMiddle2 = this.pnts[Math.round((this.ranges[2].min + this.ranges[2].max) / 2)].x;
 
-                const refinedX = {
+                refinedX = {
                     [this.ranges[0].name]: Math.min(Math.max(0, xMiddle0 - 0.5 * bbox0.width), this.xSize - bbox0.width - gap - bbox1.width - gap - bbox2.width),
                     [this.ranges[1].name]: Math.min(Math.max(bbox0.width + gap, xMiddle1 - 0.5 * bbox1.width), this.xSize - bbox1.width - gap - bbox2.width),
                     [this.ranges[2].name]: Math.min(Math.max(0, xMiddle2 - 0.5 * bbox2.width), this.xSize - bbox2.width),
@@ -238,8 +238,9 @@ export class SVGCharts {
             const drawLegendLinks = (marks: SVGElement[]) => {
                 marks.forEach((mark, i) => {
 
-                    // TODO define hardcoded values
-                    const bbox = (mark as SVGSVGElement)?.getBBox() || {width: 120, height: 40, x: 100};
+                    const bbox = (mark as SVGSVGElement)?.getBBox() // rendering in browser
+                        || {...calcRoughBox.call(this, this.ranges[i].name), x: refinedX[this.ranges[i].name]} // rendering in Node.js
+                    ;
                     const xMiddle = this.pnts[Math.round((this.ranges[i].min + this.ranges[i].max) / 2)].x;
 
                     const wordMiddle = bbox.x + 0.5 * bbox.width;
@@ -472,8 +473,6 @@ export class SVGCharts {
         </linearGradient>
 `    }
 
-
-
     private headlessSVG = ({score, backgroundColor, width, height}: HeadlessSVGGetter & ChartProps): string => {
         const genTag = ({eltName, attr}: {eltName: string, attr?: StructureElAttr}): string => {
             const attrs: string = Object.keys(attr).reduce((composed, key) => `${composed} ${key}="${attr[key]}"`, '')
@@ -482,8 +481,6 @@ export class SVGCharts {
                 <${eltName} ${attrs}>${content}</${eltName}>`
         }
 
-        console.log('this.gradientId=', this.gradientId);
-        console.log('this.chartStructure=', this.chartStructure);
         const content: string = this.chartStructure.map(genTag).join(' ');
         const body = `<?xml version="1.0" encoding="UTF-8"?>
         <svg id="${this.name}" style="background-color: ${backgroundColor}; stroke-width: ${this.getStrokeWidth()}" width="${width}" height="${height}"

@@ -1,7 +1,5 @@
-import {SVGCharts} from "./SVGChart";
-
 import { writeFileSync } from "fs";
-
+import {SVGCharts} from "./SVGChart";
 
 let score = 18;
 const headless = true;
