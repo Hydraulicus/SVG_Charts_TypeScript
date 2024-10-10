@@ -8,7 +8,6 @@ export type Ranges = {color: string, name: string, min: number, max: number}[];
 
 export interface SVGChartsTypes {
     parent: HTMLElement,
-    legendClassName: string,
     backgroundColor?: string,
     size?: { w: number, h: number },
     xAxis?: boolean,

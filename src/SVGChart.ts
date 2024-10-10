@@ -8,7 +8,6 @@ type StructureElAttr = { [key: string]: string | number };
 export class SVGCharts {
     private name: string= '';
     private parent: HTMLElement | null; // null - for headless generation
-    private readonly legendClassName: string;
     private container: SVGElement;
     private readonly headless: boolean = false;
 
@@ -49,7 +48,6 @@ export class SVGCharts {
     constructor({
                     parent,
                     headless = false,
-                    legendClassName,
                     size = {w: 400, h: 264},
                     xAxis = true,
                     yAxis = true,
@@ -59,7 +57,6 @@ export class SVGCharts {
                 }: SVGChartsTypes) {
         this.headless = headless;
         this.parent = parent;
-        this.legendClassName = legendClassName;
         this.xSize = size.w;
         this.ySize = size.h;
         this.xAxis = xAxis;
@@ -190,6 +187,8 @@ export class SVGCharts {
                 y: botY + legendTopPadding,
                 'stroke-width': `${this.relativeStrokeWidth}px`,
                 'font-size': `${this.relativeFontSize}px`,
+                'fill': 'gray',
+                'stroke': 'gray'
             }
 
             const putLegendSign = (i: number): SVGElement | null => {
@@ -199,9 +198,6 @@ export class SVGCharts {
                 )
 
                 if (txt) {
-                // TODO move this props to  this.add
-                // txt.classList.add(this.legendClassName);
-
                     const mark = document.createTextNode(`${this.ranges[i].name}`);
                     txt.appendChild(mark);
 
@@ -253,11 +249,9 @@ export class SVGCharts {
                     const ln = this.add('polyline', {
                         ...this.getDarkStyle(),
                         'stroke-width': `${this.relativeStrokeWidth}px`,
+                        'stroke': 'gray',
                         points
                     })
-                    // TODO move this props to  this.add
-                    // ln.classList.add('legend')
-                    // this.addAttributes(ln, {points})
                 })
             }
 

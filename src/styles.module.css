@@ -6,13 +6,3 @@
 body svg text {
     font-family: Roboto, sans-serif;
 }
-
-/** Styling "legend" */
-.legend {
-    fill: gray;
-    stroke: gray;
-}
-
-polyline.legend {
-    fill: none;
-}

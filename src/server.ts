@@ -8,7 +8,6 @@ const SVGChart = new SVGCharts({
     parent: null,
     headless,
     // TODO remove classes
-    legendClassName: "legend", /** looks example of class in styles.module.css*/
     size: {w: 800, h: 530},
     yAxis: false,
     ticks: false,
