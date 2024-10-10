@@ -197,43 +197,56 @@ export class SVGCharts {
                 )
 
                 if (txt) {
-
-
                 // TODO move this props to  this.add
                 // txt.classList.add(this.legendClassName);
 
-                const mark = document.createTextNode(`${this.ranges[i].name}`);
-                txt.appendChild(mark);
+                    const mark = document.createTextNode(`${this.ranges[i].name}`);
+                    txt.appendChild(mark);
 
-                return txt
+                    return txt
                 }
             }
 
             const refineLegendMarks = ([mark0, mark1, mark2]: SVGElement[]) => {
-                if (this.headless) {
-                    return
-                }
 
                 // TODO remove hardcoded values
-                const bbox0 = (mark0 as SVGSVGElement)?.getBBox() || {width: 120, height: 40, x: 100};
-                const bbox1 = (mark1 as SVGSVGElement)?.getBBox() || {width: 120, height: 40, x: 100};
-                const bbox2 = (mark2 as SVGSVGElement)?.getBBox() || {width: 120, height: 40, x: 100};
+                const bbox0 = (mark0 as SVGSVGElement)?.getBBox() || {width: 78, height: 50, x: 100};
+                const bbox1 = (mark1 as SVGSVGElement)?.getBBox() || {width: 193, height: 50, x: 100};
+                const bbox2 = (mark2 as SVGSVGElement)?.getBBox() || {width: 136, height: 50, x: 100};
+
+                console.log('bbox0=', (mark0 as SVGSVGElement)?.getBBox());
+                console.log('bbox1=', (mark1 as SVGSVGElement)?.getBBox());
+                console.log('bbox2=', (mark2 as SVGSVGElement)?.getBBox());
+
 
                 const xMiddle0 = this.pnts[Math.round((this.ranges[0].min + this.ranges[0].max) / 2)].x;
                 const xMiddle1 = this.pnts[Math.round((this.ranges[1].min + this.ranges[1].max) / 2)].x;
                 const xMiddle2 = this.pnts[Math.round((this.ranges[2].min + this.ranges[2].max) / 2)].x;
 
-                const refinedX0 = Math.min(Math.max(0, xMiddle0 - 0.5 * bbox0.width), this.xSize - bbox0.width - gap - bbox1.width - gap - bbox2.width)
-                mark0.setAttribute('x', `${refinedX0}px`);
-                const refinedX1 = Math.min(Math.max(bbox0.width + gap, xMiddle1 - 0.5 * bbox1.width), this.xSize - bbox1.width - gap - bbox2.width)
-                mark1.setAttribute('x', `${refinedX1}px`);
-                const refinedX2 = Math.min(Math.max(0, xMiddle2 - 0.5 * bbox2.width), this.xSize - bbox2.width);
-                mark2.setAttribute('x', `${refinedX2}px`);
+                const refinedX = {
+                    [mark0.innerHTML]: Math.min(Math.max(0, xMiddle0 - 0.5 * bbox0.width), this.xSize - bbox0.width - gap - bbox1.width - gap - bbox2.width),
+                    [mark1.innerHTML]: Math.min(Math.max(bbox0.width + gap, xMiddle1 - 0.5 * bbox1.width), this.xSize - bbox1.width - gap - bbox2.width),
+                    [mark2.innerHTML]: Math.min(Math.max(0, xMiddle2 - 0.5 * bbox2.width), this.xSize - bbox2.width),
+                };
+
+                function adjustTextPosition_4_HeadlessMode(el: {eltName: string, attr?: StructureElAttr}) {
+                    if (el.eltName === 'text') {
+                        el.attr.x = refinedX[el.attr.val]
+                    }
+                }
+
+                function adjustTextPosition(el: SVGElement) {
+                    el.setAttribute('x', `${refinedX[el.innerHTML]}px`);
+                }
+                [mark0, mark1, mark2].forEach(adjustTextPosition)
+
+                this.chartStructure.forEach(adjustTextPosition_4_HeadlessMode)
             }
 
             const drawLegendLinks = (marks: SVGElement[]) => {
-                console.log(' marks =', marks)
                 marks.forEach((mark, i) => {
+
+                    // TODO define hardcoded values
                     const bbox = (mark as SVGSVGElement)?.getBBox() || {width: 120, height: 40, x: 100};
                     const xMiddle = this.pnts[Math.round((this.ranges[i].min + this.ranges[i].max) / 2)].x;
 
@@ -474,9 +487,9 @@ export class SVGCharts {
     private headlessSVG = ({score, name, backgroundColor, width, height}: HeadlessSVGGetter & ChartProps): string => {
         const genTag = ({eltName, attr}: {eltName: string, attr?: StructureElAttr}): string => {
             const attrs: string = Object.keys(attr).reduce((composed, key) => `${composed} ${key}="${attr[key]}"`, '')
-            return `<${eltName} ${attrs}></${eltName}>`
+            const content = eltName === 'text' ? attr.val : '';
+            return `<${eltName} ${attrs}>${content}</${eltName}>`
         }
-
 
         const headlessGradientId = `${name}_headlessGradient`;
         console.log('this.chartStructure=', this.chartStructure);
@@ -484,12 +497,12 @@ export class SVGCharts {
         const body = `
         <?xml version="1.0" encoding="UTF-8"?>
         <svg style="background-color: ${backgroundColor}; stroke-width: ${this.getStrokeWidth()}" width="${width}" height="${height}"
-     viewBox="0 0 ${width} ${height}" xmlns:xlink="http://www.w3.org/1999/xlink">
-    <defs>
-        ${this.generateHeadlessGradient({stops: this.ranges, id: headlessGradientId})}
-    </defs>
-    ${content}
-</svg>
+            viewBox="0 0 ${width} ${height}" xmlns:xlink="http://www.w3.org/1999/xlink">
+            <defs>
+                ${this.generateHeadlessGradient({stops: this.ranges, id: headlessGradientId})}
+            </defs>
+            ${content}
+        </svg>
         `
 
 
