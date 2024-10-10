@@ -1,10 +1,15 @@
 import {SVGCharts} from "./SVGChart";
 
+import { writeFileSync } from "fs";
+
+
 let score = 18;
 const headless = true;
 const SVGChart = new SVGCharts({
+    name: "headlessChart",
     parent: null,
     headless,
+    // TODO remove classes
     legendClassName: "legend", /** looks example of class in styles.module.css*/
     size: {w: 800, h: 530},
     yAxis: false,
@@ -33,6 +38,11 @@ const SVGChart = new SVGCharts({
 
     SVGChart.addChart({ score: score});
 
-const headlessSVG = SVGChart.getHeadlessSVGChart({ score: score, name: "headless1"});
+const headlessSVG = SVGChart.getHeadlessSVGChart({ score: score});
 
 console.log(headlessSVG)
+
+writeFileSync("chart.svg", headlessSVG, {
+    flag: "w"
+})
+console.log("chart.svg composed")
