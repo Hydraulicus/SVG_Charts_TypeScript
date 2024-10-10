@@ -1,21 +1,12 @@
 import {ChartFn, ChartProps, DrawFn, Point, Ranges, SVGChartsTypes} from "./types";
-import {defDarkStyle, defLightStyle, defRanges} from "./const";
+import {defChartProps, defDarkStyle, defLightStyle, defRanges} from "./const";
+import {calcRoughBox} from "./helpers";
 
 type HeadlessSVGGetter = {score: number, name: string};
 type StructureElAttr = { [key: string]: string | number };
 
-// TODO move to const
-const defChartProps = {
-    opts: {doEqualizeAxes: true, doDrawAxes: true},
-    xMin: -2.5,
-    xMax: 2.5,
-    yMin: -10,
-    yMax: 55,
-    fn: (x: number) => Math.exp(-(x * x) / 600) * 45 + 2
-};
-
 export class SVGCharts {
-    private parent: HTMLElement;
+    private parent: HTMLElement | null; // null - for headless generation
     private readonly legendClassName: string;
     private container: SVGElement;
     private readonly headless: boolean = false;
@@ -36,6 +27,8 @@ export class SVGCharts {
 
     private readonly relativeUnit: number;
     private readonly relativeStrokeWidth: number;
+
+    private readonly relativeFontSize: number;
 
     private chartProps = defChartProps;
 
@@ -73,11 +66,12 @@ export class SVGCharts {
 
         this.relativeUnit = 0.01 * size.h;
         this.relativeStrokeWidth = 0.5 * this.relativeUnit;
+        this.relativeFontSize = 8 * this.relativeUnit;
 
         this.ranges = ranges;
 
-        // this.container = this.headless ? null : this.addSVG({...this.lightStyle, width: this.xSize, height: this.ySize});
-        this.container = this.addSVG({...this.lightStyle, width: this.xSize, height: this.ySize});
+        this.container = this.headless ? null : this.addSVG({...this.lightStyle, width: this.xSize, height: this.ySize});
+        // this.container = this.addSVG({...this.lightStyle, width: this.xSize, height: this.ySize});
 
         this.chartProps = {
             ...defChartProps,
@@ -178,16 +172,15 @@ export class SVGCharts {
         const canvasPtFromXY = (x: number, y: number) => this.getPtFromXY({x, y});
 
         const drawLegend = () => {
-            const fontSize = 8 * this.relativeUnit;
-            const gap = 0.5 * fontSize;
+            const gap = 0.5 * this.relativeFontSize;
             const [_, botY] = canvasPtFromXY(xMin, 0);
-            const legendTopPadding = 1.5 * fontSize + this.relativeUnit
+            const legendTopPadding = 1.5 * this.relativeFontSize + this.relativeUnit
 
             const commonProps = {
                 ...this.darkStyle,
                 y: botY + legendTopPadding,
                 'stroke-width': `${this.relativeStrokeWidth}px`,
-                'font-size': `${fontSize}px`,
+                'font-size': `${this.relativeFontSize}px`,
             }
 
             const putLegendSign = (i: number): SVGElement | null => {
@@ -208,39 +201,29 @@ export class SVGCharts {
             }
 
             const refineLegendMarks = ([mark0, mark1, mark2]: SVGElement[]) => {
-
-                // TODO remove hardcoded values
-                const bbox0 = (mark0 as SVGSVGElement)?.getBBox() || {width: 78, height: 50, x: 100};
-                const bbox1 = (mark1 as SVGSVGElement)?.getBBox() || {width: 193, height: 50, x: 100};
-                const bbox2 = (mark2 as SVGSVGElement)?.getBBox() || {width: 136, height: 50, x: 100};
-
-                console.log('bbox0=', (mark0 as SVGSVGElement)?.getBBox());
-                console.log('bbox1=', (mark1 as SVGSVGElement)?.getBBox());
-                console.log('bbox2=', (mark2 as SVGSVGElement)?.getBBox());
-
+                const bbox0 = (mark0 as SVGSVGElement)?.getBBox() || calcRoughBox.call(this, this.ranges[0].name);
+                const bbox1 = (mark1 as SVGSVGElement)?.getBBox() || calcRoughBox.call(this, this.ranges[1].name);
+                const bbox2 = (mark2 as SVGSVGElement)?.getBBox() || calcRoughBox.call(this, this.ranges[2].name);
 
                 const xMiddle0 = this.pnts[Math.round((this.ranges[0].min + this.ranges[0].max) / 2)].x;
                 const xMiddle1 = this.pnts[Math.round((this.ranges[1].min + this.ranges[1].max) / 2)].x;
                 const xMiddle2 = this.pnts[Math.round((this.ranges[2].min + this.ranges[2].max) / 2)].x;
 
                 const refinedX = {
-                    [mark0.innerHTML]: Math.min(Math.max(0, xMiddle0 - 0.5 * bbox0.width), this.xSize - bbox0.width - gap - bbox1.width - gap - bbox2.width),
-                    [mark1.innerHTML]: Math.min(Math.max(bbox0.width + gap, xMiddle1 - 0.5 * bbox1.width), this.xSize - bbox1.width - gap - bbox2.width),
-                    [mark2.innerHTML]: Math.min(Math.max(0, xMiddle2 - 0.5 * bbox2.width), this.xSize - bbox2.width),
+                    [this.ranges[0].name]: Math.min(Math.max(0, xMiddle0 - 0.5 * bbox0.width), this.xSize - bbox0.width - gap - bbox1.width - gap - bbox2.width),
+                    [this.ranges[1].name]: Math.min(Math.max(bbox0.width + gap, xMiddle1 - 0.5 * bbox1.width), this.xSize - bbox1.width - gap - bbox2.width),
+                    [this.ranges[2].name]: Math.min(Math.max(0, xMiddle2 - 0.5 * bbox2.width), this.xSize - bbox2.width),
                 };
 
-                function adjustTextPosition_4_HeadlessMode(el: {eltName: string, attr?: StructureElAttr}) {
-                    if (el.eltName === 'text') {
-                        el.attr.x = refinedX[el.attr.val]
-                    }
+                if (!this.headless) {
+                    [mark0, mark1, mark2].forEach(
+                        (el: SVGElement) => el.setAttribute('x', `${refinedX[el.innerHTML]}px`)
+                    )
                 }
 
-                function adjustTextPosition(el: SVGElement) {
-                    el.setAttribute('x', `${refinedX[el.innerHTML]}px`);
-                }
-                [mark0, mark1, mark2].forEach(adjustTextPosition)
-
-                this.chartStructure.forEach(adjustTextPosition_4_HeadlessMode)
+                this.chartStructure
+                    .filter(el => el.eltName === 'text')
+                    .forEach(el => {el.attr.x = refinedX[el.attr.val]})
             }
 
             const drawLegendLinks = (marks: SVGElement[]) => {
@@ -406,7 +389,7 @@ export class SVGCharts {
                 x: this.getXCoordOfScoreText(score),
                 y: this.scoreXY[1] - 6 * this.relativeUnit,
                 'stroke-width': `${this.relativeStrokeWidth}px`,
-                'font-size': `${8 * this.relativeUnit}px`,
+                'font-size': `${this.relativeFontSize}px`,
                 id: 'scoreText',
                 val: score
             }

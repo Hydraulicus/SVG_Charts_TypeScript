@@ -14,12 +14,12 @@ const start = () => {
         ranges: [
             {
                 min: 0,
-                max: 49,
+                max: 9,
                 name: "Low",
                 color: "#AA1212"
             },
             {
-                min: 50,
+                min: 10,
                 max: 89,
                 name: "Borderline",
                 color: "#fd9c13"

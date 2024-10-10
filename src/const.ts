@@ -32,3 +32,12 @@ export const defDarkStyle = {
     stroke: 'black',
     backgroundColor: '#555'
 }
+
+export const defChartProps = {
+    opts: {doEqualizeAxes: true, doDrawAxes: true},
+    xMin: -2.5,
+    xMax: 2.5,
+    yMin: -10,
+    yMax: 55,
+    fn: (x: number) => Math.exp(-(x * x) / 600) * 45 + 2
+};
